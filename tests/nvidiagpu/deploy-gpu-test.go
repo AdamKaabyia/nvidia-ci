@@ -332,24 +332,51 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 		})
 
 		AfterAll(func() {
-
 			if Nfd.CleanupAfterInstall && cleanupAfterTest {
 				// Here need to check if NFD CR is deployed, otherwise Deleting a non-existing CR will throw an error
-				// skipping error check for now cause any failure before entire NFD stack
+				// Skipping error check for now cause any failure before entire NFD stack
 				By("Delete NFD CR instance in NFD namespace")
-				_ = deploy.NFDCRDeleteAndWait(inittools.APIClient, nfd.CRName, nfd.OperatorNamespace, nvidiagpu.DeletionPollInterval, nvidiagpu.DeletionTimeoutDuration)
+				if err := deploy.NFDCRDeleteAndWait(inittools.APIClient, nfd.CRName, nfd.OperatorNamespace, nvidiagpu.DeletionPollInterval, nvidiagpu.DeletionTimeoutDuration); err != nil {
+					glog.Errorf("Failed to delete NFD CR: %v", err)
+				} else {
+					glog.Info("Successfully deleted NFD CR instance")
+				}
 
 				By("Delete NFD CSV")
-				_ = deploy.DeleteNFDCSV(inittools.APIClient)
+				if err := deploy.DeleteNFDCSV(inittools.APIClient); err != nil {
+					glog.Errorf("Failed to delete NFD CSV: %v", err)
+				} else {
+					glog.Info("Successfully deleted NFD CSV")
+				}
 
 				By("Delete NFD Subscription in NFD namespace")
-				_ = deploy.DeleteNFDSubscription(inittools.APIClient)
+				if err := deploy.DeleteNFDSubscription(inittools.APIClient); err != nil {
+					glog.Errorf("Failed to delete NFD Subscription: %v", err)
+				} else {
+					glog.Info("Successfully deleted NFD Subscription")
+				}
 
 				By("Delete NFD OperatorGroup in NFD namespace")
-				_ = deploy.DeleteNFDOperatorGroup(inittools.APIClient)
+				if err := deploy.DeleteNFDOperatorGroup(inittools.APIClient); err != nil {
+					glog.Errorf("Failed to delete NFD OperatorGroup: %v", err)
+				} else {
+					glog.Info("Successfully deleted NFD OperatorGroup")
+				}
 
 				By("Delete NFD Namespace in NFD namespace")
-				_ = deploy.DeleteNFDNamespace(inittools.APIClient)
+				if err := deploy.DeleteNFDNamespace(inittools.APIClient); err != nil {
+					glog.Errorf("Failed to delete NFD namespace: %v", err)
+				} else {
+					glog.Info("Successfully deleted NFD namespace")
+				}
+
+				By("Delete custom CatalogSource for GPU Operator")
+				// Nfd.CatalogSource == "redhat-operators-custom" && nfd.CatalogSourceNamespace == "openshift-marketplace"
+				if err := deploy.DeleteCustomCatalogSource(inittools.APIClient, Nfd.CustomCatalogSource, nfd.CatalogSourceNamespace); err != nil {
+					glog.Errorf("Failed to delete custom CatalogSource: %v", err)
+				} else {
+					glog.Info("Successfully deleted custom CatalogSource")
+				}
 			}
 		})
 

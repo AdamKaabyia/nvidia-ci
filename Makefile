@@ -137,3 +137,20 @@ run-podman-tests:
 
 
 
+run-my-podman-tests: build-container-image
+	@echo "Running podman test command"
+	@podman run --rm -ti --privileged \
+	-v $(PWD)/kubeconfig:/tmp/config/kubeconfig \
+	-v $(PWD)/artifacts:/tmp/artifacts:z \
+	--env KUBECONFIG=/tmp/config/kubeconfig \
+	--env NVIDIAGPU_CLEANUP=true \
+	--env TEST_LABELS=nvidia-ci,gpu \
+	--env DUMP_FAILED_TESTS=true \
+	--env TEST_FEATURES=nvidiagpu \
+	--env TEST_VERBOSE=true \
+	--env TEST_TRACE=true \
+	--env ARTIFACT_DIR=/tmp/artifacts \
+	--env NVIDIAGPU_GPU_FALLBACK_CATALOGSOURCE_INDEX_IMAGE=registry.redhat.io/redhat/certified-operator-index:v4.17 \
+	--env NVIDIAGPU_NFD_FALLBACK_CATALOGSOURCE_INDEX_IMAGE=registry.redhat.io/redhat/redhat-operator-index:v4.17 \
+	--entrypoint make \
+	nvidiagpu:latest run-tests
