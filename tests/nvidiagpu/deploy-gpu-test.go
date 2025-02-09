@@ -51,6 +51,10 @@ var (
 		"arm64": "quay.io/wabouham/gpu_burn_arm64:ubi9",
 	}
 
+	//adding more test workloads
+	//"amd64": "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0-ubi8"
+	//"arm64": "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0-ubi8"
+
 	machineSetNamespace         = "openshift-machine-api"
 	replicas              int32 = 1
 	workerMachineSetLabel       = "machine.openshift.io/cluster-api-machine-role"
