@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/rh-ecosystem-edge/nvidia-ci/internal/networkparams"
 
 	nvidiagpuv1 "github.com/NVIDIA/gpu-operator/api/v1"
 	nvidiagpuv1alpha1 "github.com/NVIDIA/k8s-operator-libs/api/upgrade/v1alpha1"
@@ -13,19 +14,11 @@ import (
 	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/clients"
 	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/machine"
 
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/configmap"
-	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/deployment"
-	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/namespace"
-	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/nvidiagpu"
-	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/olm"
-	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/pod"
-
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/rh-ecosystem-edge/nvidia-ci/internal/check"
 	"github.com/rh-ecosystem-edge/nvidia-ci/internal/deploy"
@@ -34,88 +27,12 @@ import (
 	"github.com/rh-ecosystem-edge/nvidia-ci/internal/gpuparams"
 	"github.com/rh-ecosystem-edge/nvidia-ci/internal/tsparams"
 	"github.com/rh-ecosystem-edge/nvidia-ci/internal/wait"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/configmap"
+	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/deployment"
+	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/namespace"
+	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/nvidiagpu"
+	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/olm"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-var (
-	gpuInstallPlanApproval v1alpha1.Approval = "Automatic"
-
-	gpuWorkerNodeSelector = map[string]string{
-		inittools.GeneralConfig.WorkerLabel:           "",
-		"feature.node.kubernetes.io/pci-10de.present": "true",
-	}
-
-	gpuBurnImageName = map[string]string{
-		"amd64": "quay.io/wabouham/gpu_burn_amd64:ubi9",
-		"arm64": "quay.io/wabouham/gpu_burn_arm64:ubi9",
-	}
-
-	//adding more test workloads
-	//"amd64": "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0-ubi8"
-	//"arm64": "nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0-ubi8"
-
-	machineSetNamespace         = "openshift-machine-api"
-	replicas              int32 = 1
-	workerMachineSetLabel       = "machine.openshift.io/cluster-api-machine-role"
-
-	nfdCleanupAfterInstall bool = false
-
-	// NvidiaGPUConfig provides access to general configuration parameters.
-	nvidiaGPUConfig                  *nvidiagpuconfig.NvidiaGPUConfig
-	gpuScaleCluster                  bool = false
-	gpuCatalogSource                      = "undefined"
-	nfdCatalogSource                      = "undefined"
-	gpuCustomCatalogSource                = "undefined"
-	nfdCustomCatalogSource                = "undefined"
-	createGPUCustomCatalogsource     bool = false
-	createNFDCustomCatalogsource     bool = false
-	gpuCustomCatalogsourceIndexImage      = "undefined"
-	nfdCustomCatalogsourceIndexImage      = "undefined"
-	gpuSubscriptionChannel                = "undefined"
-	gpuDefaultSubscriptionChannel         = "undefined"
-	gpuOperatorUpgradeToChannel           = "undefined"
-	cleanupAfterTest                 bool = true
-	deployFromBundle                 bool = false
-	gpuOperatorBundleImage                = ""
-	gpuCurrentCSV                         = ""
-	gpuCurrentCSVVersion                  = ""
-	clusterArchitecture                   = "undefined"
-)
-
-const (
-	nfdOperatorNamespace      = "openshift-nfd"
-	nfdCatalogSourceDefault   = "redhat-operators"
-	nfdCatalogSourceNamespace = "openshift-marketplace"
-	nfdOperatorDeploymentName = "nfd-controller-manager"
-	nfdPackage                = "nfd"
-	nfdCRName                 = "nfd-instance"
-	operatorVersionFile       = "operator.version"
-	openShiftVersionFile      = "ocp.version"
-
-	nvidiaGPUNamespace                  = "nvidia-gpu-operator"
-	nfdRhcosLabel                       = "feature.node.kubernetes.io/system-os_release.ID"
-	nfdRhcosLabelValue                  = "rhcos"
-	nvidiaGPULabel                      = "feature.node.kubernetes.io/pci-10de.present"
-	gpuOperatorGroupName                = "gpu-og"
-	gpuOperatorDeployment               = "gpu-operator"
-	gpuSubscriptionName                 = "gpu-subscription"
-	gpuSubscriptionNamespace            = "nvidia-gpu-operator"
-	gpuCatalogSourceDefault             = "certified-operators"
-	gpuCatalogSourceNamespace           = "openshift-marketplace"
-	gpuPackage                          = "gpu-operator-certified"
-	gpuClusterPolicyName                = "gpu-cluster-policy"
-	gpuBurnNamespace                    = "test-gpu-burn"
-	gpuBurnPodName                      = "gpu-burn-pod"
-	gpuBurnPodLabel                     = "app=gpu-burn-app"
-	gpuBurnConfigmapName                = "gpu-burn-entrypoint"
-	gpuOperatorDefaultMasterBundleImage = "registry.gitlab.com/nvidia/kubernetes/gpu-operator/staging/gpu-operator-bundle:main-latest"
-
-	gpuCustomCatalogSourcePublisherName    = "Red Hat"
-	nfdCustomNFDCatalogSourcePublisherName = "Red Hat"
-
-	gpuCustomCatalogSourceDisplayName = "Certified Operators Custom"
-	nfdCustomCatalogSourceDisplayName = "Redhat Operators Custom"
 )
 
 var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
@@ -397,20 +314,7 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 
 		It("Deploy NVIDIA GPU Operator with DTK", Label("nvidia-ci:gpu"), func() {
 
-			By("Check if NFD is installed %s")
-			nfdLabelDetected, err := check.AllNodeLabel(inittools.APIClient, nfdRhcosLabel, nfdRhcosLabelValue,
-				inittools.GeneralConfig.WorkerLabelMap)
-
-			Expect(err).ToNot(HaveOccurred(), "error calling check.NodeLabel:  %v ", err)
-			Expect(nfdLabelDetected).NotTo(BeFalse(), "NFD node label check failed to match "+
-				"label %s and label value %s on all nodes", nfdRhcosLabel, nfdRhcosLabelValue)
-			glog.V(gpuparams.GpuLogLevel).Infof("The check for NFD label returned: %v", nfdLabelDetected)
-
-			isNfdInstalled, err := check.NFDDeploymentsReady(inittools.APIClient)
-			Expect(err).ToNot(HaveOccurred(), "error checking if NFD deployments are ready:  "+
-				"%v ", err)
-			glog.V(gpuparams.GpuLogLevel).Infof("The check for NFD deployments ready returned: %v",
-				isNfdInstalled)
+			checkNfdInstallation(inittools.APIClient, nfdRhcosLabel, nfdRhcosLabelValue, inittools.GeneralConfig.WorkerLabelMap, networkparams.LogLevel)
 
 			By("Check if at least one worker node is GPU enabled")
 			gpuNodeFound, _ := check.NodeWithLabel(inittools.APIClient, nvidiaGPULabel, inittools.GeneralConfig.WorkerLabelMap)
@@ -913,72 +817,7 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 				}
 			}()
 
-			By("Deploy gpu-burn pod in test-gpu-burn namespace")
-			glog.V(gpuparams.GpuLogLevel).Infof("gpu-burn pod image name is: '%s', in namespace '%s'",
-				gpuBurnImageName[clusterArchitecture], gpuBurnNamespace)
-
-			gpuBurnPod, err := gpuburn.CreateGPUBurnPod(inittools.APIClient, gpuBurnPodName, gpuBurnNamespace,
-				gpuBurnImageName[(clusterArchitecture)], 5*time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "Error creating gpu burn pod: %v", err)
-
-			glog.V(gpuparams.GpuLogLevel).Infof("Creating gpu-burn pod '%s' in namespace '%s'",
-				gpuBurnPodName, gpuBurnNamespace)
-
-			_, err = inittools.APIClient.Pods(gpuBurnPod.Namespace).Create(context.TODO(), gpuBurnPod,
-				metav1.CreateOptions{})
-			Expect(err).ToNot(HaveOccurred(), "Error creating gpu-burn '%s' in "+
-				"namespace '%s': %v", gpuBurnPodName, gpuBurnNamespace, err)
-
-			glog.V(gpuparams.GpuLogLevel).Infof("The created gpuBurnPod has name: %s has status: %v ",
-				gpuBurnPod.Name, gpuBurnPod.Status)
-
-			By("Get the gpu-burn pod with label \"app=gpu-burn-app\"")
-			gpuPodName, err := get.GetFirstPodNameWithLabel(inittools.APIClient, gpuBurnNamespace, gpuBurnPodLabel)
-			Expect(err).ToNot(HaveOccurred(), "error getting gpu-burn pod with label "+
-				"'app=gpu-burn-app' from namespace '%s' :  %v ", gpuBurnNamespace, err)
-			glog.V(gpuparams.GpuLogLevel).Infof("gpuPodName is %s ", gpuPodName)
-
-			By("Pull the gpu-burn pod object from the cluster")
-			gpuPodPulled, err := pod.Pull(inittools.APIClient, gpuPodName, gpuBurnNamespace)
-			Expect(err).ToNot(HaveOccurred(), "error pulling gpu-burn pod from "+
-				"namespace '%s' :  %v ", gpuBurnNamespace, err)
-
-			By("Cleanup gpu-burn pod only if cleanupAfterTest is true and gpuOperatorUpgradeToChannel is undefined")
-			defer func() {
-				if cleanupAfterTest && gpuOperatorUpgradeToChannel == "undefined" {
-					_, err := gpuPodPulled.Delete()
-					Expect(err).ToNot(HaveOccurred())
-				}
-			}()
-
-			By("Wait for up to 3 minutes for gpu-burn pod to be in Running phase")
-			err = gpuPodPulled.WaitUntilInStatus(corev1.PodRunning, 3*time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "timeout waiting for gpu-burn pod in "+
-				"namespace '%s' to go to Running phase:  %v ", gpuBurnNamespace, err)
-			glog.V(gpuparams.GpuLogLevel).Infof("gpu-burn pod now in Running phase")
-
-			By("Wait for gpu-burn pod to run to completion and be in Succeeded phase/Completed status")
-			err = gpuPodPulled.WaitUntilInStatus(corev1.PodSucceeded, 8*time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "timeout waiting for gpu-burn pod '%s' in "+
-				"namespace '%s'to go Succeeded phase/Completed status:  %v ", gpuBurnPodName, gpuBurnNamespace, err)
-			glog.V(gpuparams.GpuLogLevel).Infof("gpu-burn pod now in Succeeded Phase/Completed status")
-
-			By("Get the gpu-burn pod logs")
-			glog.V(gpuparams.GpuLogLevel).Infof("Get the gpu-burn pod logs")
-
-			gpuBurnLogs, err := gpuPodPulled.GetLog(500*time.Second, "gpu-burn-ctr")
-
-			Expect(err).ToNot(HaveOccurred(), "error getting gpu-burn pod '%s' logs "+
-				"from gpu burn namespace '%s' :  %v ", gpuBurnNamespace, err)
-			glog.V(gpuparams.GpuLogLevel).Infof("Gpu-burn pod '%s' logs:\n%s",
-				gpuPodPulled.Definition.Name, gpuBurnLogs)
-
-			By("Parse the gpu-burn pod logs and check for successful execution")
-			match1 := strings.Contains(gpuBurnLogs, "GPU 0: OK")
-			match2 := strings.Contains(gpuBurnLogs, "100.0%  proc'd:")
-
-			Expect(match1 && match2).ToNot(BeFalse(), "gpu-burn pod execution was FAILED")
-			glog.V(gpuparams.GpuLogLevel).Infof("Gpu-burn pod execution was successful")
+			onlyburn_deployAndTestGPU()
 
 		})
 
@@ -1119,99 +958,9 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 			glog.V(gpuparams.GpuLogLevel).Infof("The ready ClusterPolicy just marshalled "+
 				"in json: %v", string(cpReadyAgainJSON))
 
-			By("Pull the previously deployed gpu-burn pod object from the cluster")
-			currentGpuBurnPodPulled, err := pod.Pull(inittools.APIClient, gpuBurnPodName, gpuBurnNamespace)
-			Expect(err).ToNot(HaveOccurred(), "error pulling previously deployed and completed "+
-				"gpu-burn pod from namespace '%s' :  %v ", gpuBurnNamespace, err)
+			cleanupPreviousDeployment()
 
-			By("Get the gpu-burn pod with label \"app=gpu-burn-app\"")
-			currentGpuBurnPodName, err := get.GetFirstPodNameWithLabel(inittools.APIClient, gpuBurnNamespace,
-				gpuBurnPodLabel)
-			Expect(err).ToNot(HaveOccurred(), "error getting previously deployed gpu-burn pod "+
-				"with label 'app=gpu-burn-app' from namespace '%s' :  %v ", gpuBurnNamespace, err)
-			glog.V(gpuparams.GpuLogLevel).Infof("gpuPodName is %s ", currentGpuBurnPodName)
-
-			By("Delete the previously deployed gpu-burn-pod")
-			glog.V(gpuparams.GpuLogLevel).Infof("Deleting previously deployed and completed gpu-burn pod")
-
-			_, err = currentGpuBurnPodPulled.Delete()
-			Expect(err).ToNot(HaveOccurred(), "Error deleting gpu-burn pod")
-
-			By("Re-deploy gpu-burn pod in test-gpu-burn namespace")
-			glog.V(gpuparams.GpuLogLevel).Infof("Re-deployed gpu-burn pod image name is: '%s', in "+
-				"namespace '%s'", gpuBurnImageName[clusterArchitecture], gpuBurnNamespace)
-
-			By("Get Cluster Architecture from first GPU enabled worker node")
-			glog.V(gpuparams.GpuLogLevel).Infof("Getting cluster architecture from nodes with "+
-				"gpuWorkerNodeSelector: %v", gpuWorkerNodeSelector)
-			clusterArch, err := get.GetClusterArchitecture(inittools.APIClient, gpuWorkerNodeSelector)
-			Expect(err).ToNot(HaveOccurred(), "error getting cluster architecture:  %v ", err)
-
-			glog.V(gpuparams.GpuLogLevel).Infof("cluster architecture for GPU enabled worker node is: %s",
-				clusterArch)
-
-			gpuBurnPod2, err := gpuburn.CreateGPUBurnPod(inittools.APIClient, gpuBurnPodName, gpuBurnNamespace,
-				gpuBurnImageName[(clusterArch)], 5*time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "Error re-building gpu burn pod object after "+
-				"upgrade: %v", err)
-
-			glog.V(gpuparams.GpuLogLevel).Infof("Re-deploying gpu-burn pod '%s' in namespace '%s'",
-				gpuBurnPodName, gpuBurnNamespace)
-
-			_, err = inittools.APIClient.Pods(gpuBurnNamespace).Create(context.TODO(), gpuBurnPod2,
-				metav1.CreateOptions{})
-			Expect(err).ToNot(HaveOccurred(), "Error re-deploying gpu-burn '%s' after operator"+
-				" upgrade in namespace '%s': %v", gpuBurnPodName, gpuBurnNamespace, err)
-
-			glog.V(gpuparams.GpuLogLevel).Infof("The re-deployed post upgrade gpuBurnPod has name: %s has "+
-				"status: %v ", gpuBurnPod2.Name, gpuBurnPod2.Status)
-
-			By("Get the re-deployed gpu-burn pod with label \"app=gpu-burn-app\"")
-			gpuBurnPod2Name, err := get.GetFirstPodNameWithLabel(inittools.APIClient, gpuBurnNamespace, gpuBurnPodLabel)
-			Expect(err).ToNot(HaveOccurred(), "error getting re-deployed gpu-burn pod with label "+
-				"'app=gpu-burn-app' from namespace '%s' :  %v ", gpuBurnNamespace, err)
-			glog.V(gpuparams.GpuLogLevel).Infof("gpuPodName is %s ", gpuBurnPod2Name)
-
-			By("Pull the re-created gpu-burn pod object from the cluster")
-			gpuBurnPod2Pulled, err := pod.Pull(inittools.APIClient, gpuBurnPod2.Name, gpuBurnNamespace)
-			Expect(err).ToNot(HaveOccurred(), "error pulling re-deployed gpu-burn pod from "+
-				"namespace '%s' :  %v ", gpuBurnNamespace, err)
-
-			defer func() {
-				if cleanupAfterTest {
-					_, err := gpuBurnPod2Pulled.Delete()
-					Expect(err).ToNot(HaveOccurred())
-				}
-			}()
-
-			By("Wait for up to 3 minutes for re-deployed gpu-burn pod to be in Running phase")
-			err = gpuBurnPod2Pulled.WaitUntilInStatus(corev1.PodRunning, 3*time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "timeout waiting for re-deployed gpu-burn pod in "+
-				"namespace '%s' to go to Running phase:  %v ", gpuBurnNamespace, err)
-			glog.V(gpuparams.GpuLogLevel).Infof("gpu-burn pod now in Running phase")
-
-			By("Wait for re-deployed gpu-burn pod to run to completion and be in Succeeded phase/Completed status")
-			err = gpuBurnPod2Pulled.WaitUntilInStatus(corev1.PodSucceeded, 8*time.Minute)
-			Expect(err).ToNot(HaveOccurred(), "timeout waiting for gpu-burn pod '%s' in "+
-				"namespace '%s'to go Succeeded phase/Completed status:  %v ", gpuBurnPodName, gpuBurnNamespace, err)
-			glog.V(gpuparams.GpuLogLevel).Infof("gpu-burn pod now in Succeeded Phase/Completed status")
-
-			By("Get the gpu-burn pod logs")
-			glog.V(gpuparams.GpuLogLevel).Infof("Get the re-created gpu-burn pod logs")
-
-			gpuBurnPod2Logs, err := gpuBurnPod2Pulled.GetLog(500*time.Second, "gpu-burn-ctr")
-
-			Expect(err).ToNot(HaveOccurred(), "error getting gpu-burn pod '%s' logs "+
-				"from gpu burn namespace '%s' :  %v ", gpuBurnNamespace, err)
-			glog.V(gpuparams.GpuLogLevel).Infof("Gpu-burn pod '%s' logs:\n%s",
-				gpuBurnPod2Pulled.Definition.Name, gpuBurnPod2Logs)
-
-			By("Parse the re-created gpu-burn pod logs and check for successful execution")
-			match1a := strings.Contains(gpuBurnPod2Logs, "GPU 0: OK")
-			match2a := strings.Contains(gpuBurnPod2Logs, "100.0%  proc'd:")
-
-			Expect(match1a && match2a).ToNot(BeFalse(), "Re-deployed gpu-burn pod execution was FAILED")
-			glog.V(gpuparams.GpuLogLevel).Infof("Gpu-burn pod execution was successful")
+			redeployGpuBurnPod()
 
 		})
 
