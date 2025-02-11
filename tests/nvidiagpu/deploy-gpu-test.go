@@ -394,9 +394,10 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 			By("Get Cluster Architecture from first GPU enabled worker node")
 			glog.V(gpuparams.GpuLogLevel).Infof("Getting cluster architecture from nodes with "+
 				"gpuWorkerNodeSelector: %v", gpuWorkerNodeSelector)
-			clusterArchitecture, err := get.GetClusterArchitecture(inittools.APIClient, gpuWorkerNodeSelector)
+			clusterArch, err := get.GetClusterArchitecture(inittools.APIClient, gpuWorkerNodeSelector)
 			Expect(err).ToNot(HaveOccurred(), "error getting cluster architecture:  %v ", err)
 
+			clusterArchitecture = clusterArch
 			glog.V(gpuparams.GpuLogLevel).Infof("cluster architecture for GPU enabled worker node is: %s",
 				clusterArchitecture)
 
