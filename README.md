@@ -173,3 +173,25 @@ Executing nvidiagpu test-runner script
 scripts/test-runner.sh
 ginkgo -timeout=24h --keep-going --require-suite -r -vv --trace --label-filter="nno" ./tests/nvidianetwork
 ```
+
+Sure, here's the example for running the CUDA vector add test formatted similarly to your request:
+
+
+Example running the light Podman tests for CUDA vector add:
+```
+$ export KUBECONFIG=/path/to/kubeconfig
+$ export NVIDIAGPU_CLEANUP=true
+$ export TEST_LABELS="nvidia-ci,gpu"
+$ export DUMP_FAILED_TESTS=true
+$ export TEST_FEATURES="nvidiagpu"
+$ export TEST_VERBOSE=true
+$ export TEST_TRACE=true
+$ export ARTIFACT_DIR="/tmp/artifacts"
+$ export NVIDIAGPU_GPU_FALLBACK_CATALOGSOURCE_INDEX_IMAGE="registry.redhat.io/redhat/certified-operator-index:v4.17"
+$ export NVIDIAGPU_NFD_FALLBACK_CATALOGSOURCE_INDEX_IMAGE="registry.redhat.io/redhat/redhat-operator-index:v4.17"
+$ export TEST_WORKLOAD_IMAGE="nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0-ubi8"
+$ export TEST_WORKLOAD="cuda-vector-add"
+$ make run-tests
+Executing nvidiagpu test-runner script
+run_light_podman_tests
+```
