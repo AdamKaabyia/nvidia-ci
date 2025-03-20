@@ -27,12 +27,12 @@ jobs:
       # Step 3: Install dependencies
       - name: Install dependencies
         run: |
-          pip install -r pr_matrix/requirements.txt  # Install any necessary dependencies
+          pip install -r dashboard_matrix/requirements.txt  
 
-      # Step 4: Run your extraction code (pr_matrix/pr_matrix.py)
+      # Step 4: Run your extraction code (dashboard_matrix/pr_matrix.py)
       - name: Extract data
         run: |
-          python pr_matrix/generate_test_matrix_data.py
+          python dashboard_matrix/generate_test_matrix_data.py
 
       # Step 5: Commit and push updated JSON to main branch
       - name: Commit and push updated JSON data to main
@@ -41,7 +41,7 @@ jobs:
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           
           # Check if there are changes to the JSON file
-          git add pr_matrix/ocp_data.json
+          git add dashboard_matrix/ocp_data.json
           git diff-index --quiet HEAD || git commit -m "Update test matrix data"
           
           # Push the changes to the main branch
@@ -50,12 +50,12 @@ jobs:
       # Step 6: Run your HTML generation code
       - name: Generate HTML page
         run: |
-          python pr_matrix/generate_test_matrix_ui.py
+          python dashboard_matrix/generate_test_matrix_ui.py
 
       # Step 7: Deploy the generated HTML page
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages         # The branch the action should deploy to.
-          folder: pr_matrix/output  # The folder the action should deploy.
+          folder: dashboard_matrix/output  # The folder the action should deploy.
           token: ${{ secrets.GITHUB_TOKEN }}  
