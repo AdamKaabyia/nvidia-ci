@@ -142,7 +142,7 @@ html_content = """
 </head>
 <body>
 
-<h2>OCP Test Results Matrix</h2>
+<h2>Test matrix: NVIDIA GPU operator on Red Hat OpenShift</h2>
 
 """
 
