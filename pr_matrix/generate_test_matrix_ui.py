@@ -1,7 +1,9 @@
 import json
+from utils import logger
+import os
 
 # Load the JSON data
-with open("output/ocp_data.json", "r") as f:
+with open("ocp_data.json", "r") as f:
     ocp_data = json.load(f)
 
 # Sort OCP versions in descending order (newest to oldest)
@@ -248,8 +250,11 @@ html_content += """
 </html>
 """
 
+output_dir = "output"
+os.makedirs(output_dir, exist_ok=True)  # Create the directory if it does not exist
+
 # Save the HTML file
-with open("output/index.html", "w") as f:
+with open(os.path.join(output_dir, "index.html"), "w") as f:
     f.write(html_content)
 
-print("Matrix report generated: output/index.html")
+logger.info(f"Matrix report generated: {os.path.join(output_dir, 'index.html')}")

@@ -19,7 +19,7 @@ def generate_history():
     try:
         logger.info("Generating history...")
         r = requests.get(url="https://api.github.com/repos/rh-ecosystem-edge/nvidia-ci/pulls",
-                         params={"state": "closed", "base": "main", "per_page": "100", "page": "1"}, #"head": "rh-ecosystem-edge:create-pull-request/patch"},
+                         params={"state": "closed", "base": "main", "per_page": "100", "page": "1"},
                          headers={"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"})
         r.raise_for_status()
         for pr in r.json():

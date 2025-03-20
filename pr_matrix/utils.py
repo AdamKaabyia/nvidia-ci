@@ -41,15 +41,9 @@ def store_ocp_data(original_ocp_version, full_ocp_version, gpu, status, link,tim
     logger.info(f"Stored OCP version: {full_ocp_version} - GPU: {gpu}, Status: {status}, Link: {link}")
 
 
-def save_to_json(file_path='output/ocp_data.json'):
+def save_to_json(file_path='ocp_data.json'):
     """Save the collected data to a JSON file, preserving old data."""
     try:
-        # Ensure the output directory exists
-        output_dir = os.path.dirname(file_path)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-            logger.info(f"Created output directory: {output_dir}")
-
         # Load existing data if the file exists
         try:
             with open(file_path, 'r') as f:
