@@ -165,7 +165,8 @@ for ocp_version in sorted_ocp_versions:
     # Regular Results Table
     html_content += f"""
     <div class="ocp-version-container">
-        <div class="ocp-version-header">OCP Version {ocp_version} (Regular)</div>
+        <div class="ocp-version-header">OpenShift {ocp_version}</div>
+        <div><strong>Operator Catalog</strong></div>
         <table id="table-{ocp_version}-regular">
             <thead>
                 <tr>
@@ -194,17 +195,12 @@ for ocp_version in sorted_ocp_versions:
     html_content += """
             </tbody>
         </table>
-    </div>
-    """
-
-    # Bundle Results Table
-    html_content += f"""
-    <div class="ocp-version-container">
-        <div class="ocp-version-header">OCP Version {ocp_version} (Bundle)</div>
+        
+        <div><strong>Bundle from main branch</strong></div>
         <table id="table-{ocp_version}-bundle">
             <thead>
                 <tr>
-                    <th onclick="sortTable(0, 'table-{ocp_version}-bundle')">GPU Version</th>
+                    <th>Last Version</th>
                     <th>Last Finished</th>
                     <th>History of the Last 15 Tests</th>
                 </tr>
