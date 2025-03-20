@@ -6,8 +6,14 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 */12 * * *'  # This will run every 12 hours
-  workflow_dispatch:  # This allows you to manually trigger the workflow
+    - cron: '0 */12 * * *'  # Runs every 12 hours
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to check out'
+        default: 'main'
+        required: false
+        type: string
 
 jobs:
   generate-matrix:
@@ -42,10 +48,9 @@ jobs:
           
           # Check if there are changes to the JSON file
           git add dashboard_matrix/ocp_data.json
-          git diff-index --quiet HEAD || git commit -m "Update test matrix data"
-          
-          # Push the changes to the main branch
-          git push origin main
+          git diff-index --quiet HEAD || (
+            git commit -m "Update test matrix data" && git push origin main
+          )
 
       # Step 6: Run your HTML generation code
       - name: Generate HTML page
