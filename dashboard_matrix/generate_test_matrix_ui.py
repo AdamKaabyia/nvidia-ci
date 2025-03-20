@@ -1,6 +1,11 @@
 import json
 from utils import logger
 import os
+from datetime import datetime
+from datetime import timezone
+
+
+
 
 # Load the JSON data
 with open("ocp_data.json", "r") as f:
@@ -16,7 +21,7 @@ html_content = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test matrix: NVIDIA GPU operator on Red Hat OpenShift</title>
+    <title>Test Matrix: NVIDIA GPU Operator on Red Hat OpenShift</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -142,7 +147,7 @@ html_content = """
 </head>
 <body>
 
-<h2>Test matrix: NVIDIA GPU operator on Red Hat OpenShift</h2>
+<h2>Test Matrix: NVIDIA GPU Operator on Red Hat OpenShift</h2>
 
 """
 
@@ -212,10 +217,6 @@ for ocp_version in sorted_ocp_versions:
     for result in bundle_results:
         gpu_version = result["gpu"]
         timestamp = result["timestamp"]
-        # Format the timestamp into a readable date (optional)
-        from datetime import datetime
-        from datetime import timezone
-
         formatted_time = datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
 
