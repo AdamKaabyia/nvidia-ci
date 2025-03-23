@@ -12,7 +12,7 @@ jobs:
 
     steps:
       # Step 1: Checkout the repository
-      - name: Checkout 🛎️
+      - name: Checkout PR code
         uses: actions/checkout@v4
 
       # Step 2: Set up Python
@@ -36,7 +36,14 @@ jobs:
         run: |
           cat dashboard_matrix/ocp_data.json
 
-      # Step 6: Commit and push updated JSON to main branch
+      # Step 6: Checkout the main branch explicitly and commit changes
+      - name: Checkout main branch
+        run: |
+          git fetch origin main
+          git checkout main
+          git pull origin main
+
+      # Step 7: Commit and push updated JSON to main branch
       - name: Commit and push updated JSON data to main
         run: |
           git config --global user.name "${{ github.actor }}"
@@ -46,17 +53,17 @@ jobs:
           git commit -m "Update test matrix data" || echo "No changes to commit"
           git push origin main
 
-      # Step 7: Debugging the JSON file after modification
+      # Step 8: Debugging the JSON file after modification
       - name: Check JSON after modification
         run: |
           cat dashboard_matrix/ocp_data.json
 
-      # Step 8: Run your HTML generation code
+      # Step 9: Run your HTML generation code
       - name: Generate HTML page
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
 
-      # Step 9: Deploy the generated HTML page
+      # Step 10: Deploy the generated HTML page
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
