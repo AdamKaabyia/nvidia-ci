@@ -17,6 +17,7 @@ test_pattern = re.compile(r"pr-logs/pull/rh-ecosystem-edge_nvidia-ci/\d+/pull-ci
 
 def generate_history():
     try:
+        #long term adjust to smaller history
         logger.info("Generating history...")
         r = requests.get(url="https://api.github.com/repos/rh-ecosystem-edge/nvidia-ci/pulls",
                          params={"state": "closed", "base": "main", "per_page": "100", "page": "1"},
@@ -75,12 +76,9 @@ def get_job_results(pr_id, prefix, ocp_version, gpu_version_suffix):
         latest_build = fetch_file_content(r.json()["items"][0]["name"])
         logger.info(f"Job: {prefix}, latest build: {latest_build}")
         status,timestamp = get_status(prefix, latest_build)
-        # TODO: We can't get the exact versions if not success.
-        # Probably we should include only successful results in the matrix, may have a separate section for warnings.
         url = get_job_url(pr_id, ocp_version, gpu_version_suffix, latest_build)
 
         if status == "SUCCESS":
-            # exact_versions == (ocp_version, gpu_version)
             exact_versions = get_versions(prefix, latest_build, gpu_version_suffix)
             logger.info(f"Job {prefix} succeeded, exact versions: {exact_versions}")
             store_ocp_data(ocp_version,exact_versions[0], exact_versions[1], status, url,timestamp)
