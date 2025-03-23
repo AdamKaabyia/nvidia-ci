@@ -1,17 +1,10 @@
 name: Generate test matrices pages
 
-# Controls when the action will run.
 on:
-  push:
+  pull_request:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'Branch to check out'
-        default: 'main'
-        required: false
-        type: string
+    types: [opened, synchronize, reopened]
 
 jobs:
   generate-matrix:
