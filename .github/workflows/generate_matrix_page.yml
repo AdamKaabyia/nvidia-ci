@@ -45,11 +45,11 @@ jobs:
           git checkout ${{ github.head_ref }}  # Checkout to the PR branch again
           git merge origin/main --strategy-option=theirs --allow-unrelated-histories --no-ff -m "Merge main into PR branch"  # Merge main into the PR branch
 
-      # Step 7: Set git user identity for commits
+      # Step 7: Set Git identity for commits
       - name: Set Git identity
         run: |
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
 
       # Step 8: Commit and push updated JSON to the PR branch
       - name: Commit and push updated JSON data to the PR branch
