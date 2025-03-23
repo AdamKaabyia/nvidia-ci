@@ -36,34 +36,32 @@ jobs:
         run: |
           cat dashboard_matrix/ocp_data.json
 
-      # Step 6: Checkout the main branch explicitly and commit changes
-      - name: Checkout main branch
-        run: |
-          git fetch origin main
-          git checkout main
-          git pull origin main
-
-      # Step 7: Commit and push updated JSON to main branch
-      - name: Commit and push updated JSON data to main
+      # Step 6: Commit and push updated JSON to the PR branch
+      - name: Commit and push updated JSON data to the PR branch
         run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           
+          # Add the updated ocp_data.json file to the commit
           git add dashboard_matrix/ocp_data.json
-          git commit -m "Update test matrix data" || echo "No changes to commit"
-          git push origin main
 
-      # Step 8: Debugging the JSON file after modification
+          # Commit the changes if there are any updates
+          git commit -m "Update test matrix data" || echo "No changes to commit"
+
+          # Push the changes to the same branch the PR was opened from
+          git push origin HEAD:${{ github.head_ref }}
+
+      # Step 7: Debugging the JSON file after modification
       - name: Check JSON after modification
         run: |
           cat dashboard_matrix/ocp_data.json
 
-      # Step 9: Run your HTML generation code
+      # Step 8: Run your HTML generation code
       - name: Generate HTML page
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
 
-      # Step 10: Deploy the generated HTML page
+      # Step 9: Deploy the generated HTML page
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
