@@ -86,6 +86,7 @@ jobs:
         uses: EndBug/add-and-commit@v7
         with:
           message: "Update test matrix data"
+          # Force-add the JSON file to ensure it's tracked, in case it's untracked
           add: "--force dashboard_matrix/ocp_data.json"
           push: "true"
 

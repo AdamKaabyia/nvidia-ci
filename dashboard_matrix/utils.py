@@ -51,7 +51,7 @@ def store_ocp_data(original_ocp_version, full_ocp_version, gpu, status, link, ti
     print(f"[store_ocp_data] Current ocp_data keys: {list(ocp_data.keys())}")
     print(f"[store_ocp_data] ocp_data[{original_ocp_version}] length is now: {len(ocp_data[original_ocp_version])}")
 
-def save_to_json(file_path='ocp_data.json'):
+def save_to_json(file_path='dashboard_matrix/ocp_data.json'):
     """Save the collected data to a JSON file, preserving old data."""
     print(f"[save_to_json] Attempting to save data to {file_path}")
     try:
