@@ -357,7 +357,7 @@ def generate_test_matrix(ocp_data):
 # Test the function
 def test_generate_test_matrix():
     # Load the JSON data
-    with open("ocp_data.json", "r") as f:
+    with open("dashboard_matrix/ocp_data.json", "r") as f:
         ocp_data = json.load(f)
 
     html_content = generate_test_matrix(ocp_data)
