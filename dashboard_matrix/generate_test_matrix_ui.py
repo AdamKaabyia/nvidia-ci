@@ -1,174 +1,211 @@
 import json
 from utils import logger
 import os
-from datetime import datetime
-from datetime import timezone
+from datetime import datetime, timezone
 
+# HTML Header with Updated Styling for User-Friendliness and Modern Colors
+def generate_html_header():
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Test Matrix: NVIDIA GPU Operator on Red Hat OpenShift</title>
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background-color: #f1f1f1; /* Soft background */
+                margin: 0;
+                padding: 20px;
+                color: #333;
+            }
+            h2 {
+                text-align: center;
+                margin-bottom: 20px;
+                color: #007bff; /* Soft blue */
+                font-size: 28px;
+            }
+            .ocp-version-container {
+                margin-bottom: 40px;
+                padding: 20px;
+                background-color: #ffffff;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+            .ocp-version-header {
+                font-size: 26px;
+                margin-bottom: 15px;
+                color: #333;
+                background-color: #f7f9fc; /* Light grey background */
+                padding: 15px;
+                border-radius: 8px;
+                font-weight: bold;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+                background-color: #ffffff;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 12px;
+                text-align: left;
+                font-size: 14px;
+                transition: background-color 0.2s ease;
+            }
+            th {
+                background-color: #007BFF; /* Blue */
+                color: white;
+                cursor: pointer;
+                font-size: 16px;
+                position: relative;
+            }
+            th:hover {
+                background-color: #0056b3; /* Darker blue */
+            }
+            th:after {
+                content: ' ▼'; /* Default sorting direction */
+                position: absolute;
+                right: 10px;
+                font-size: 12px;
+                color: white;
+            }
+            th.asc:after {
+                content: ' ▲';
+            }
+            th.desc:after {
+                content: ' ▼';
+            }
+            td {
+                background-color: #f9f9f9;
+            }
+            td:hover {
+                background-color: #f1f1f1;
+                cursor: pointer;
+            }
 
+            /* History bar styles */
+            .history-bar {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                margin: 20px 0;
+                padding: 12px 18px;
+                border: 2px solid #007BFF;
+                border-radius: 8px;
+                background-color: #ffffff;
+                color: #333;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                transition: background-color 0.2s ease;
+                flex-wrap: wrap;
+            }
 
+            .history-square {
+                width: 55px;
+                height: 55px;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: transform 0.1s ease;
+                border: 2px solid #ddd;
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            }
 
-# Load the JSON data
-with open("ocp_data.json", "r") as f:
-    ocp_data = json.load(f)
+            .history-square:hover {
+                transform: scale(1.2);
+                box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+            }
 
-# Sort OCP versions in descending order (newest to oldest)
-sorted_ocp_versions = sorted(ocp_data.keys(), reverse=True)
+            /* Status coloring */
+            .history-success {
+                background-color: #64dd17; /* Bright green */
+            }
 
-# Define HTML structure
-html_content = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Matrix: NVIDIA GPU Operator on Red Hat OpenShift</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7fc;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #007bff;
-        }
-        .ocp-version-container {
-            margin-bottom: 40px;
-        }
-        .ocp-version-header {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #333;
-            background-color: #e9ecef;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            background-color: #ffffff;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 12px;
-            text-align: left;
-        }
-        th {
-            background-color: #007BFF;
-            color: white;
-            cursor: pointer;
-        }
-        th:hover {
-            background-color: #0056b3;
-        }
-        td {
-            background-color: #f9f9f9;
-        }
-        td:hover {
-            background-color: #f1f1f1;
-        }
-        .status-btn {
-            padding: 6px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            border: none;
-        }
-        .success { background-color: #d4edda; color: #155724; }
-        .failure { background-color: #f8d7da; color: #721c24; }
-        .aborted { background-color: #fff3cd; color: #856404; }
-        .history-bar {
-            display: flex;
-            gap: 5px;
-            align-items: center;
-        }
-        .history-dot {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        .history-success {
-            background-color: green;
-        }
-        .history-failure {
-            background-color: red;
-        }
-        .history-aborted {
-            background-color: yellow;
-        }
-    </style>
-    <script>
-        // Function to sort the table
-        function sortTable(n, tableId) {
-            let table = document.getElementById(tableId);
-            let rows = table.rows;
-            let switching = true;
-            let shouldSwitch, i, x, y;
-            let dir = "asc"; // Default direction
+            .history-failure {
+                background-color: #ff3d00; /* Bright red */
+            }
 
-            while (switching) {
-                switching = false;
-                for (i = 1; i < (rows.length - 1); i++) {
-                    shouldSwitch = false;
-                    x = rows[i].getElementsByTagName("TD")[n];
-                    y = rows[i + 1].getElementsByTagName("TD")[n];
-                    if (dir === "asc") {
-                        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
-                            shouldSwitch = true;
-                            break;
-                        }
-                    } else if (dir === "desc") {
-                        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
-                            shouldSwitch = true;
-                            break;
-                        }
-                    }
+            .history-aborted {
+                background-color: #ffd600; /* Yellow */
+            }
+
+            /* Tooltip on hover */
+            .history-square:hover::after {
+                content: attr(title);  /* Display status and timestamp as tooltip */
+                position: absolute;
+                background-color: #333;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 5px;
+                font-size: 12px;
+                top: 60px;
+                z-index: 10;
+                width: 200px;
+                text-align: center;
+            }
+
+            /* Responsive design for smaller screens */
+            @media screen and (max-width: 768px) {
+                table {
+                    font-size: 14px;
                 }
-                if (shouldSwitch) {
-                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-                    switching = true;
-                } else {
-                    if (dir === "asc") {
-                        dir = "desc";
-                    } else {
-                        break;
-                    }
+                .history-bar {
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+                .history-square {
+                    width: 45px;
+                    height: 45px;
                 }
             }
+        </style>
+    </head>
+    <body>
+
+    <h2>Test Matrix: NVIDIA GPU Operator on Red Hat OpenShift</h2>
+    <script>
+        // Function to sort the table
+        function sortTable(column, tableId) {
+            var table = document.getElementById(tableId);
+            var rows = Array.from(table.rows);
+            var isAscending = table.rows[0].cells[column].classList.contains('asc');
+            rows = rows.slice(1);  // Exclude the header row
+
+            rows.sort(function(rowA, rowB) {
+                var cellA = rowA.cells[column].innerText;
+                var cellB = rowB.cells[column].innerText;
+
+                // Handle numeric and string sorting
+                if (!isNaN(cellA) && !isNaN(cellB)) {
+                    return isAscending ? cellA - cellB : cellB - cellA;
+                } else {
+                    return isAscending
+                        ? cellA.localeCompare(cellB)
+                        : cellB.localeCompare(cellA);
+                }
+            });
+
+            // Rebuild table rows
+            rows.forEach(function(row) {
+                table.appendChild(row);
+            });
+
+            // Toggle the sorting direction
+            var header = table.rows[0].cells[column];
+            header.classList.toggle('asc', !isAscending);
+            header.classList.toggle('desc', isAscending);
         }
     </script>
-</head>
-<body>
+    """
 
-<h2>Test Matrix: NVIDIA GPU Operator on Red Hat OpenShift</h2>
-
-"""
-
-# Generate matrix for each OCP version
-for ocp_version in sorted_ocp_versions:
-    results = ocp_data[ocp_version]
-    
-    # Separate bundle and regular results
-    bundle_results = [
-        result for result in results 
-        if "bundle" in result["gpu"].lower() or "master" in result["gpu"].lower()
-    ]
-
-    # Regular results will be everything that is not in bundle_results
-    regular_results = [
-        result for result in results 
-        if "bundle" not in result["gpu"].lower() and "master" not in result["gpu"].lower()
-    ]
-
-    # Regular Results Table
-    html_content += f"""
+# Generate the regular results table with bundled results in a row
+def generate_regular_results_table(ocp_version, regular_results, bundle_results):
+    table_html = f"""
     <div class="ocp-version-container">
         <div class="ocp-version-header">OpenShift {ocp_version}</div>
         <div><strong>Operator Catalog</strong></div>
@@ -177,7 +214,7 @@ for ocp_version in sorted_ocp_versions:
                 <tr>
                     <th onclick="sortTable(0, 'table-{ocp_version}-regular')">Full OCP Version</th>
                     <th onclick="sortTable(1, 'table-{ocp_version}-regular')">GPU Version</th>
-                    <th>Link to Job</th>
+                    <th>Prow Job</th>
                 </tr>
             </thead>
             <tbody>
@@ -189,7 +226,7 @@ for ocp_version in sorted_ocp_versions:
         gpu_version = result["gpu"]
         link = result["link"]
         
-        html_content += f"""
+        table_html += f"""
         <tr>
             <td>{full_ocp}</td>
             <td>{gpu_version}</td>
@@ -197,61 +234,144 @@ for ocp_version in sorted_ocp_versions:
         </tr>
         """
     
-    html_content += """
+    table_html += """
             </tbody>
         </table>
-        
-        <div><strong>Bundle from main branch</strong></div>
-        <table id="table-{ocp_version}-bundle">
-            <thead>
-                <tr>
-                    <th>Last Version</th>
-                    <th>Last Finished</th>
-                    <th>History of the Last 15 Tests</th>
-                </tr>
-            </thead>
-            <tbody>
     """
-    
-    # Populate rows for bundle test results
-    for result in bundle_results:
-        gpu_version = result["gpu"]
-        timestamp = result["timestamp"]
-        formatted_time = datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
-
-        history = result.get("history", [])
-        history_dots = "".join([
-            f"<div class='history-dot { 'history-success' if h == 'SUCCESS' else 'history-failure' if h == 'FAILURE' else 'history-aborted' }' onclick='window.open(\"{result['link']}\", \"_blank\")'></div>"
-            for h in history
-        ])
-        
-        html_content += f"""
-        <tr>
-            <td>{gpu_version}</td>
-            <td>{formatted_time}</td>
-            <td><div class='history-bar'>{history_dots}</div></td>
-        </tr>
+    # Add the bundle results below the regular table in a row
+    if bundle_results:
+        table_html += """
+        <div><strong>Bundles Associated with this Regular Results</strong></div>
+        <div style="padding-left: 20px; display: flex; flex-wrap: wrap; gap: 15px;">
+        """
+        for bundle in bundle_results:
+            status = bundle.get("status", "Unknown")
+            status_class = "history-success" if status == "SUCCESS" else "history-failure" if status == "FAILURE" else "history-aborted"
+            bundle_timestamp = datetime.utcfromtimestamp(bundle["timestamp"]).strftime("%Y-%m-%d %H:%M:%S UTC")
+            table_html += f"""
+            <div class='history-square {status_class}' 
+                onclick='window.open("{bundle["link"]}", "_blank")' 
+                title='Status: {status} | Timestamp: {bundle_timestamp}'>
+            </div>
+            """
+        table_html += "</div>"
+        # Display the date of the last bundle
+        last_bundle_date = datetime.utcfromtimestamp(bundle_results[0]["timestamp"]).strftime("%Y-%m-%d %H:%M:%S UTC")
+        table_html += f"""
+        <div><strong>Last Bundle Job Date: </strong>{last_bundle_date}</div>
         """
 
+    table_html += "</div>"
     
-    html_content += """
-            </tbody>
-        </table>
+    return table_html
+
+# Generate the bundle results section with clickable squares
+def generate_bundle_results_section(bundle_results):
+    if not bundle_results:
+        print("No bundle results found.")
+        return ""
+
+    # Get the latest bundle
+    latest_bundle = bundle_results[0]  # Always take the top of the main branch
+    timestamp = latest_bundle.get("timestamp", "Unknown Timestamp")  # Assuming timestamp field exists
+    
+    # Convert timestamp to datetime in UTC and format it
+    if timestamp != "Unknown Timestamp":
+        dt = datetime.utcfromtimestamp(timestamp)
+        timestamp = dt.replace(tzinfo=timezone.utc).astimezone(timezone.utc).strftime('%Y-%m-%d %H:%M:%S %Z')
+
+    print(f"Latest bundle found: {latest_bundle}")
+    print(f"Timestamp: {timestamp}")
+
+    # Create the fake data for history bar (latest 15 results)
+    fake_data = {
+        "fake-version": bundle_results[:15]  # The latest 15 results
+    }
+    print(f"Fake data for history bar: {fake_data}")
+
+    # Generate the history bar HTML with clickable status squares
+    history_bar_html = "<div class='history-bar'>"
+    for result in bundle_results[:15]:  # Limit to latest 15 results
+        status = result.get("status", "Unknown")  # Get the status (e.g., SUCCESS, FAILURE, ABORTED)
+        status_class = "history-success" if status == "SUCCESS" else "history-failure" if status == "FAILURE" else "history-aborted"
+
+        # Prepare status and timestamp info for tooltip
+        status_info = f"Status: {status} | Timestamp: {datetime.utcfromtimestamp(result['timestamp']).strftime('%Y-%m-%d %H:%M:%S UTC')}"
+
+        history_bar_html += f"""
+        <div class='history-square {status_class}' 
+            onclick='window.open("{result["link"]}", "_blank")' 
+            title='{status_info}'>
+        </div>
+        """
+    
+    history_bar_html += "</div>"
+    print(f"History bar HTML: {history_bar_html}")
+
+    # Generate the HTML section for the bundle results
+    bundle_html = f"""
+    <div><strong>Bundle from main branch</strong></div>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: bold;">{timestamp}</span>
+        <span>{history_bar_html}</span>
     </div>
     """
+    print("Generated bundle results section HTML.")
+    
+    return bundle_html
 
-# Close HTML tags
-html_content += """
-</body>
-</html>
-"""
+# Generate the entire test matrix
+def generate_test_matrix(ocp_data):
+    sorted_ocp_versions = sorted(ocp_data.keys(), reverse=True)
 
-output_dir = "output"
-os.makedirs(output_dir, exist_ok=True)  # Create the directory if it does not exist
+    # Start with the HTML header
+    html_content = generate_html_header()
 
-# Save the HTML file
-with open(os.path.join(output_dir, "index.html"), "w") as f:
-    f.write(html_content)
+    for ocp_version in sorted_ocp_versions:
+        results = ocp_data[ocp_version]
+        
+        # Separate bundle and regular results
+        bundle_results = [
+            result for result in results 
+            if "bundle" in result["gpu"].lower() or "master" in result["gpu"].lower()
+        ]
 
-logger.info(f"Matrix report generated: {os.path.join(output_dir, 'index.html')}")
+        regular_results = [
+            result for result in results 
+            if "bundle" not in result["gpu"].lower() and "master" not in result["gpu"].lower()
+        ]
+        
+        # Add regular results table to the HTML, along with associated bundle results
+        html_content += generate_regular_results_table(ocp_version, regular_results, bundle_results)
+
+    # Close HTML tags
+    html_content += """
+    </body>
+    </html>
+    """
+
+    return html_content
+
+
+# Test the function
+def test_generate_test_matrix():
+    # Load the JSON data
+    with open("ocp_data.json", "r") as f:
+        ocp_data = json.load(f)
+
+    html_content = generate_test_matrix(ocp_data)
+
+    output_dir = "output"
+    os.makedirs(output_dir, exist_ok=True)  # Create the directory if it does not exist
+
+    # Save the HTML file
+    output_path = os.path.join(output_dir, "index.html")
+    with open(output_path, "w") as f:
+        f.write(html_content)
+
+    logger.info(f"Matrix report generated: {output_path}")
+
+
+# Run the test function to verify the changes
+test_generate_test_matrix()
