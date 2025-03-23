@@ -43,7 +43,7 @@ jobs:
         run: |
           git fetch origin main  # Fetch the latest main branch
           git checkout ${{ github.head_ref }}  # Checkout to the PR branch again
-          git merge origin/main --strategy-option=theirs --no-ff -m "Merge main into PR branch"  # Merge main into the PR branch
+          git merge origin/main --strategy-option=theirs --allow-unrelated-histories --no-ff -m "Merge main into PR branch"  # Merge main into the PR branch
 
       # Step 7: Commit and push updated JSON to the PR branch
       - name: Commit and push updated JSON data to the PR branch
