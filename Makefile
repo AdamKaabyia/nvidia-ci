@@ -4,7 +4,7 @@ GO_PACKAGES=$(shell go list ./... | grep -v vendor)
 .PHONY: lint \
         deps-update \
         vet
-
+###################################################################################
 .PHONY: mockgen
 mockgen: ## Install mockgen locally.
 	go install go.uber.org/mock/mockgen@v0.3.0
