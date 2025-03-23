@@ -1,7 +1,7 @@
 import os
 import json
 from dataclasses import dataclass
-
+from logger import *
 # Initialize a dictionary to store results
 ocp_data = {}
 
