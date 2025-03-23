@@ -26,7 +26,6 @@ jobs:
           pip install --upgrade pip
           pip install -r dashboard_matrix/requirements.txt
 
-      # Run the script that modifies ocp_data.json
       - name: Run extraction script
         run: |
           python dashboard_matrix/generate_test_matrix_data.py
@@ -36,32 +35,28 @@ jobs:
           echo "===== ocp_data.json AFTER SCRIPT ====="
           cat dashboard_matrix/ocp_data.json || echo "File not found"
 
-      # Show the diff for debugging
       - name: Show git diff
         run: |
           git diff
           git status
 
-      # Use EndBug/add-and-commit
+      # IMPORTANT: Pass --force to the add param so that untracked files are forcibly tracked
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
           message: "Update test matrix data"
-          add: "dashboard_matrix/ocp_data.json"
+          add: "--force dashboard_matrix/ocp_data.json"
           push: "true"
 
-      # Another debug step
       - name: Print JSON after commit
         run: |
           echo "===== ocp_data.json AFTER COMMIT ====="
           cat dashboard_matrix/ocp_data.json || echo "File not found"
 
-      # Generate HTML
       - name: Generate HTML
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
 
-      # Deploy
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
