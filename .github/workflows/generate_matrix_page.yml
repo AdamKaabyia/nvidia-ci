@@ -44,32 +44,36 @@ jobs:
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
 
-      # Step 7: Debug git status and check for changes
+      # Step 7: Force add untracked file
+      - name: Force add untracked file to Git
+        run: |
+          git add -f dashboard_matrix/ocp_data.json
+
+      # Step 8: Debug git status and check for changes
       - name: Check for changes
         run: |
           git status
           git diff
 
-      # Step 8: Commit and push updated JSON to the PR branch
+      # Step 9: Commit and push updated JSON to the PR branch
       - name: Commit and push updated JSON data to the PR branch
         run: |
-          git add dashboard_matrix/ocp_data.json
           git commit -m "Update test matrix data" || echo "No changes to commit"
           
           # Push the changes to the same PR branch
-          git push origin HEAD:${{ github.head_ref }} --force
+          git push origin HEAD:${{ github.head_ref }}
 
-      # Step 9: Check the JSON file after modification
+      # Step 10: Check the JSON file after modification
       - name: Check JSON after modification
         run: |
           cat dashboard_matrix/ocp_data.json
 
-      # Step 10: Run HTML generation code
+      # Step 11: Run HTML generation code
       - name: Generate HTML page
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
 
-      # Step 11: Deploy the generated HTML page
+      # Step 12: Deploy the generated HTML page
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
