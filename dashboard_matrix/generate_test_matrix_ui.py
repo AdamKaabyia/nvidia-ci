@@ -354,24 +354,24 @@ def generate_test_matrix(ocp_data):
     return html_content
 
 
-# Test the function
+
 def test_generate_test_matrix():
-    # Load the JSON data
+    # Load the JSON data from dashboard_matrix/ocp_data.json
     with open("dashboard_matrix/ocp_data.json", "r") as f:
         ocp_data = json.load(f)
 
+    # Generate the HTML content
     html_content = generate_test_matrix(ocp_data)
 
-    output_dir = "output"
+    # Save the HTML to dashboard_matrix/output (matching your GitHub Pages deploy folder)
+    output_dir = "dashboard_matrix/output"
     os.makedirs(output_dir, exist_ok=True)  # Create the directory if it does not exist
 
-    # Save the HTML file
     output_path = os.path.join(output_dir, "index.html")
     with open(output_path, "w") as f:
         f.write(html_content)
 
     logger.info(f"Matrix report generated: {output_path}")
-
 
 # Run the test function to verify the changes
 test_generate_test_matrix()
