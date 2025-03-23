@@ -6,7 +6,7 @@ LABEL org.opencontainers.image.authors="Red Hat Ecosystem Engineering"
 USER root
 # Copying oc binary
 COPY --from=oc-cli /usr/bin/oc /usr/bin/oc
-
+##############################################
 # Install dependencies: `operator-sdk`
 ARG OPERATOR_SDK_VERSION=v1.6.2
 RUN ARCH=$(case $(uname -m) in x86_64) echo -n amd64 ;; aarch64) echo -n arm64 ;; *) echo -n $(uname -m) ;; esac) && \
