@@ -17,7 +17,7 @@ import (
 	"k8s.io/utils/ptr"
 	"k8s.io/utils/strings/slices"
 )
-
+//
 // Builder provides struct for namespace object containing connection to the cluster and the namespace definitions.
 type Builder struct {
 	// Namespace definition. Used to create namespace object.
