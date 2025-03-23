@@ -24,7 +24,7 @@ jobs:
           ls -alh
 
       ###################################################################
-      # 2. CHECKOUT THE PR BRANCH
+      # 2. CHECK OUT THE PR BRANCH
       ###################################################################
       - name: Checkout PR code
         uses: actions/checkout@v4
@@ -40,7 +40,7 @@ jobs:
           if [ -f .gitignore ]; then cat .gitignore; else echo "No .gitignore found."; fi
 
       ###################################################################
-      # 3. PYTHON SETUP
+      # 3. SET UP PYTHON & INSTALL DEPENDENCIES
       ###################################################################
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -64,7 +64,7 @@ jobs:
           python -u dashboard_matrix/generate_test_matrix_data.py
 
       ###################################################################
-      # 5. PRE-SWITCH INSPECTION
+      # 5. PRE-SWITCH INSPECTION (DEBUG)
       ###################################################################
       - name: Show updated JSON
         run: |
@@ -80,7 +80,7 @@ jobs:
           ls -alh dashboard_matrix/ocp_data.json || true
 
       ###################################################################
-      # 6. STASH OR COPY THE UPDATED FILE BEFORE SWITCHING BRANCHES
+      # 6. COPY THE UPDATED FILE BEFORE SWITCHING BRANCHES
       ###################################################################
       - name: Copy updated JSON to a temp location
         run: |
@@ -98,18 +98,15 @@ jobs:
           git pull origin main
 
       ###################################################################
-      # 8. COPY UPDATED FILE ONTO MAIN
+      # 8. COPY UPDATED FILE ONTO MAIN & PUSH
       ###################################################################
       - name: Overwrite ocp_data.json on main
         run: |
-          echo "==== Copying updated file onto main branch ===="
+          echo "==== Overwriting ocp_data.json on main ===="
           cp /tmp/updated_ocp_data.json dashboard_matrix/ocp_data.json
           ls -alh dashboard_matrix || true
           cat dashboard_matrix/ocp_data.json || true
 
-      ###################################################################
-      # 9. COMMIT AND PUSH CHANGES TO MAIN
-      ###################################################################
       - name: Commit changes to main
         run: |
           echo "==== Committing changes to main ===="
@@ -121,7 +118,16 @@ jobs:
           git push origin main
 
       ###################################################################
-      # 10. GENERATE HTML
+      # 9. RE-PULL MAIN TO ENSURE LOCAL JSON IS UP TO DATE
+      ###################################################################
+      - name: Pull latest main after push
+        run: |
+          git pull origin main
+          echo "==== Confirming final local ocp_data.json matches main ===="
+          cat dashboard_matrix/ocp_data.json
+
+      ###################################################################
+      # 10. GENERATE HTML (NOW WE HAVE THE UPDATED MAIN)
       ###################################################################
       - name: Generate HTML
         run: |
