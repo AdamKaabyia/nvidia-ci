@@ -31,27 +31,35 @@ jobs:
         run: |
           python dashboard_matrix/generate_test_matrix_data.py
 
-      # Step 5: Commit and push updated JSON to main branch
+      # Step 5: Debugging the JSON file before modification
+      - name: Check JSON before modification
+        run: |
+          cat dashboard_matrix/ocp_data.json
+
+      # Step 6: Commit and push updated JSON to main branch
       - name: Commit and push updated JSON data to main
         run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           
-          # Check if there are changes to the JSON file
           git add dashboard_matrix/ocp_data.json
-          git diff-index --quiet HEAD || (
-            git commit -m "Update test matrix data" && git push origin main
-          )
+          git commit -m "Update test matrix data" || echo "No changes to commit"
+          git push origin main
 
-      # Step 6: Run your HTML generation code
+      # Step 7: Debugging the JSON file after modification
+      - name: Check JSON after modification
+        run: |
+          cat dashboard_matrix/ocp_data.json
+
+      # Step 8: Run your HTML generation code
       - name: Generate HTML page
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
 
-      # Step 7: Deploy the generated HTML page
+      # Step 9: Deploy the generated HTML page
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages         # The branch the action should deploy to.
           folder: dashboard_matrix/output  # The folder the action should deploy.
-          token: ${{ secrets.GITHUB_TOKEN }}  
+          token: ${{ secrets.GITHUB_TOKEN }}
