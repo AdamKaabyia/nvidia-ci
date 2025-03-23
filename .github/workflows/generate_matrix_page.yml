@@ -38,19 +38,15 @@ jobs:
         run: |
           cat dashboard_matrix/ocp_data.json
 
-      # Step 6: Fetch the latest changes from the main branch
-      - name: Fetch and merge latest changes from main
+      # Step 6: Set Git identity for commits (to ensure we can commit and push)
+      - name: Set Git identity
         run: |
-          git fetch origin main  # Fetch the latest main branch
-          git checkout ${{ github.head_ref }}  # Checkout to the PR branch again
-          git merge origin/main --strategy-option=theirs --no-ff -m "Merge main into PR branch"  # Merge main into the PR branch
+          git config --global user.name "${{ github.actor }}"
+          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
 
       # Step 7: Commit and push updated JSON to the PR branch
       - name: Commit and push updated JSON data to the PR branch
         run: |
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
-          
           git add dashboard_matrix/ocp_data.json
           git commit -m "Update test matrix data" || echo "No changes to commit"
           
