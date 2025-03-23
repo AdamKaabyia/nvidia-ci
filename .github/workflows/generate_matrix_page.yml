@@ -33,48 +33,52 @@ jobs:
         run: |
           python dashboard_matrix/generate_test_matrix_data.py
 
-      # Step 5: Check the JSON file before modification
-      - name: Check JSON before modification
+      # Step 5: Get the updated JSON content
+      - name: Get updated JSON data
+        id: get_json
         run: |
-          cat dashboard_matrix/ocp_data.json
+          # Get the updated JSON content
+          UPDATED_JSON=$(cat dashboard_matrix/ocp_data.json)
+          echo "::set-output name=ocp_data::$UPDATED_JSON"
 
-      # Step 6: Set Git identity for commits
-      - name: Set Git identity
-        run: |
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+      # Step 6: Update the ocp_data.json file in the repo using GitHub API
+      - name: Update ocp_data.json in the repo
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const content = '${{ steps.get_json.outputs.ocp_data }}';  // Get the JSON from the previous step
+            const filePath = 'dashboard_matrix/ocp_data.json';  // Path to your file in the repo
+            
+            // GitHub API to update the file
+            const { data: currentFile } = await github.rest.repos.getContent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path: filePath
+            });
 
-      # Step 7: Force add untracked file to Git
-      - name: Force add untracked file to Git
-        run: |
-          git add -f dashboard_matrix/ocp_data.json
+            const sha = currentFile.sha;  // Get the current file's SHA
+            await github.rest.repos.createOrUpdateFileContents({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path: filePath,
+              message: 'Update ocp_data.json from workflow',
+              content: Buffer.from(content).toString('base64'),
+              sha: sha
+            });
 
-      # Step 8: Debug git status and check for changes
-      - name: Check for changes
-        run: |
-          git status  # To see if there are any untracked or modified files
-          git diff    # Check what changes have been made
-
-      # Step 9: Commit and push updated JSON to the PR branch
-      - name: Commit and push updated JSON data to the PR branch
-        run: |
-          # Ensure the commit happens even if no changes are detected
-          git commit -am "Update test matrix data" || echo "No changes to commit"
-          
-          # Push the changes to the same PR branch
-          git push origin HEAD:${{ github.head_ref }}
-
-      # Step 10: Check the JSON file after modification
+      # Step 7: Check the JSON file after modification
       - name: Check JSON after modification
         run: |
           cat dashboard_matrix/ocp_data.json
 
-      # Step 11: Run HTML generation code
+      # Step 8: Run HTML generation code
       - name: Generate HTML page
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
 
-      # Step 12: Deploy the generated HTML page
+      # Step 9: Deploy the generated HTML page
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
