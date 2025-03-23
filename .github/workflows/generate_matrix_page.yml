@@ -14,6 +14,8 @@ jobs:
       # Step 1: Checkout the repository
       - name: Checkout PR code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}  # Ensure we checkout the PR branch (not main)
 
       # Step 2: Set up Python
       - name: Set up Python 3.13
@@ -36,32 +38,36 @@ jobs:
         run: |
           cat dashboard_matrix/ocp_data.json
 
-      # Step 6: Commit and push updated JSON to the PR branch
+      # Step 6: Fetch and merge the latest changes from the main branch
+      - name: Fetch and merge latest changes from main
+        run: |
+          git fetch origin main  # Fetch the latest main branch
+          git checkout ${GITHUB_REF}  # Checkout to the PR branch
+          git merge origin/main --strategy-option=theirs  # Merge main into the PR branch, preferring main changes
+
+      # Step 7: Commit and push updated JSON to the PR branch
       - name: Commit and push updated JSON data to the PR branch
         run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
           
-          # Add the updated ocp_data.json file to the commit
           git add dashboard_matrix/ocp_data.json
-
-          # Commit the changes if there are any updates
           git commit -m "Update test matrix data" || echo "No changes to commit"
-
-          # Push the changes to the same branch the PR was opened from
+          
+          # Push the changes to the same PR branch
           git push origin HEAD:${{ github.head_ref }}
 
-      # Step 7: Debugging the JSON file after modification
+      # Step 8: Debugging the JSON file after modification
       - name: Check JSON after modification
         run: |
           cat dashboard_matrix/ocp_data.json
 
-      # Step 8: Run your HTML generation code
+      # Step 9: Run your HTML generation code
       - name: Generate HTML page
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
 
-      # Step 9: Deploy the generated HTML page
+      # Step 10: Deploy the generated HTML page
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
