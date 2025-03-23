@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
+      # Step 1: Checkout the PR branch
       - name: Checkout PR code
         uses: actions/checkout@v4
         with:
@@ -33,17 +33,17 @@ jobs:
         run: |
           python dashboard_matrix/generate_test_matrix_data.py
 
-      # Step 5: Debugging the JSON file before modification
+      # Step 5: Check the JSON file before modification
       - name: Check JSON before modification
         run: |
           cat dashboard_matrix/ocp_data.json
 
-      # Step 6: Fetch and merge the latest changes from the main branch
-      - name: Fetch and merge latest changes from main
+      # Step 6: Checkout main branch to merge the latest changes
+      - name: Checkout main branch to fetch latest changes
         run: |
-          git fetch origin main  # Fetch the latest main branch
-          git checkout ${GITHUB_REF}  # Checkout to the PR branch
-          git merge origin/main --strategy-option=theirs  # Merge main into the PR branch, preferring main changes
+          git fetch origin main  # Fetch latest main branch
+          git checkout ${{ github.head_ref }}  # Checkout to the PR branch again
+          git merge origin/main --strategy-option=theirs  # Merge changes from main into the PR branch
 
       # Step 7: Commit and push updated JSON to the PR branch
       - name: Commit and push updated JSON data to the PR branch
@@ -57,12 +57,12 @@ jobs:
           # Push the changes to the same PR branch
           git push origin HEAD:${{ github.head_ref }}
 
-      # Step 8: Debugging the JSON file after modification
+      # Step 8: Check the JSON file after modification
       - name: Check JSON after modification
         run: |
           cat dashboard_matrix/ocp_data.json
 
-      # Step 9: Run your HTML generation code
+      # Step 9: Run HTML generation code
       - name: Generate HTML page
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
