@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the PR branch (this step checks out the PR branch, not a new branch)
+      # Step 1: Checkout the PR branch
       - name: Checkout PR code
         uses: actions/checkout@v4
         with:
@@ -36,37 +36,41 @@ jobs:
       # Step 5: Check the JSON file before modification
       - name: Check JSON before modification
         run: |
+          echo "Checking JSON before modification"
           cat dashboard_matrix/ocp_data.json
 
-      # Step 6: Fetch the latest changes from the main branch (this ensures the latest `main` content)
-      - name: Fetch latest changes from main branch
-        run: |
-          git fetch origin main  # Fetch the latest main branch
-          git checkout main      # Checkout the `main` branch
-
-      # Step 7: Commit and push updated JSON to the `main` branch
-      - name: Commit and push updated JSON data to main
+      # Step 6: Set Git identity for commits (to ensure we can commit and push)
+      - name: Set Git identity
         run: |
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
-          
+
+      # Step 7: Check if JSON has changes before committing
+      - name: Check if JSON has changes
+        run: |
+          git status
+
+      # Step 8: Commit and push updated JSON to the PR branch
+      - name: Commit and push updated JSON data to the PR branch
+        run: |
           git add dashboard_matrix/ocp_data.json
           git commit -m "Update test matrix data" || echo "No changes to commit"
           
-          # Push the changes to the `main` branch directly
-          git push origin main
+          # Push the changes to the same PR branch
+          git push origin HEAD:${{ github.head_ref }}
 
-      # Step 8: Check the JSON file after modification
+      # Step 9: Check the JSON file after modification
       - name: Check JSON after modification
         run: |
+          echo "Checking JSON after modification"
           cat dashboard_matrix/ocp_data.json
 
-      # Step 9: Run HTML generation code
+      # Step 10: Run HTML generation code
       - name: Generate HTML page
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
 
-      # Step 10: Deploy the generated HTML page
+      # Step 11: Deploy the generated HTML page
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
