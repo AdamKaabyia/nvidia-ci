@@ -44,7 +44,7 @@ jobs:
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
 
-      # Step 7: Force add untracked file
+      # Step 7: Force add untracked file to Git
       - name: Force add untracked file to Git
         run: |
           git add -f dashboard_matrix/ocp_data.json
@@ -52,13 +52,14 @@ jobs:
       # Step 8: Debug git status and check for changes
       - name: Check for changes
         run: |
-          git status
-          git diff
+          git status  # To see if there are any untracked or modified files
+          git diff    # Check what changes have been made
 
       # Step 9: Commit and push updated JSON to the PR branch
       - name: Commit and push updated JSON data to the PR branch
         run: |
-          git commit -m "Update test matrix data" || echo "No changes to commit"
+          # Ensure the commit happens even if no changes are detected
+          git commit -am "Update test matrix data" || echo "No changes to commit"
           
           # Push the changes to the same PR branch
           git push origin HEAD:${{ github.head_ref }}
