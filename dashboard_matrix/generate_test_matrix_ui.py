@@ -331,16 +331,20 @@ def generate_test_matrix(ocp_data):
     for ocp_version in sorted_ocp_versions:
         results = ocp_data[ocp_version]
         
-        # Separate bundle and regular results
-        bundle_results = [
-            result for result in results 
-            if "bundle" in result["gpu"].lower() or "master" in result["gpu"].lower()
+        # First, define regular_results strictly:
+        regular_results = [
+            r for r in results
+            if ("bundle" not in r["gpu"].lower())
+            and ("master" not in r["gpu"].lower())
+            and (r.get("status") == "SUCCESS")
         ]
 
-        regular_results = [
-            result for result in results 
-            if "bundle" not in result["gpu"].lower() and "master" not in result["gpu"].lower()
+        # Then, let bundle_results be everything else:
+        bundle_results = [
+            r for r in results
+            if r not in regular_results
         ]
+
         
         # Add regular results table to the HTML, along with associated bundle results
         html_content += generate_regular_results_table(ocp_version, regular_results, bundle_results)
