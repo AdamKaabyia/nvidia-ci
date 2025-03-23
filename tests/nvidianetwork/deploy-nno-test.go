@@ -36,11 +36,6 @@ var (
 		nvidiaNetworkLabel:                  "true",
 	}
 
-	// Temporary workarounds for arm64 servers
-	// Need to do the following exports before running test case:
-	// export OFED_REPOSITORY=quay.io/bschmaus
-	// Note the default repo is:  nvcr.io/nvidia/mellanox
-	// export OFED_DRIVER_VERSION ="24.10-0.5.5.0-0"
 	ofedDriverVersion = os.Getenv("OFED_DRIVER_VERSION")
 	ofedRepository    = os.Getenv("OFED_REPOSITORY")
 
@@ -59,9 +54,8 @@ var (
 
 	CustomCatalogSource = UndefinedValue
 
-	createNNOCustomCatalogsource bool = false
-
-	CustomCatalogsourceIndexImage = UndefinedValue
+	createNNOCustomCatalogsource  bool = false
+	CustomCatalogsourceIndexImage      = UndefinedValue
 )
 
 const (
@@ -79,14 +73,14 @@ const (
 	nnoNicClusterPolicyName   = "nic-cluster-policy"
 
 	nnoCustomCatalogSourcePublisherName = "Red Hat"
-
-	nnoCustomCatalogSourceDisplayName = "Certified Operators Custom"
+	nnoCustomCatalogSourceDisplayName   = "Certified Operators Custom"
 )
 
 var _ = Describe("NNO", Ordered, Label(tsparams.LabelSuite), func() {
 
 	var (
-		deployBundle deploy.Deploy
+		deployBundle       deploy.Deploy
+		deployBundleConfig deploy.BundleConfig
 	)
 
 	nvidiaNetworkConfig = nvidianetworkconfig.NewNvidiaNetworkConfig()
@@ -280,10 +274,9 @@ var _ = Describe("NNO", Ordered, Label(tsparams.LabelSuite), func() {
 				glog.V(networkparams.LogLevel).Infof("Deploying Network operator from bundle")
 				// This returns the Deploy interface object initialized with the API client
 				deployBundle = deploy.NewDeploy(inittools.APIClient)
-				nnoBundleConfig, err := deployBundle.GetBundleConfig(networkparams.LogLevel)
-				Expect(err).ToNot(HaveOccurred(), "error from deploy.GetBundleConfig %s ", err)
-				glog.V(networkparams.LogLevel).Infof("Extracted env var NETWORK_BUNDLE_IMAGE"+
-					" is '%s'", nnoBundleConfig.BundleImage)
+				deployBundleConfig.BundleImage = networkOperatorBundleImage
+				glog.V(networkparams.LogLevel).Infof("Deploying Network operator from bundle image '%s'",
+					deployBundleConfig.BundleImage)
 
 			} else {
 				glog.V(networkparams.LogLevel).Infof("Deploying Network Operator from catalogsource")
@@ -407,19 +400,18 @@ var _ = Describe("NNO", Ordered, Label(tsparams.LabelSuite), func() {
 			if deployFromBundle {
 				glog.V(networkparams.LogLevel).Infof("Initializing the kube API Client before deploying bundle")
 				deployBundle = deploy.NewDeploy(inittools.APIClient)
-				nnoBundleConfig, err := deployBundle.GetBundleConfig(networkparams.LogLevel)
-				Expect(err).ToNot(HaveOccurred(), "error from deploy.GetBundleConfig %s ", err)
 
-				glog.V(networkparams.LogLevel).Infof("Extracted NetworkOperator bundle image from env var "+
-					"NVIDIANETWORK_BUNDLE_IMAGE '%s'", nnoBundleConfig.BundleImage)
+				deployBundleConfig.BundleImage = networkOperatorBundleImage
 
-				glog.V(networkparams.LogLevel).Infof("Deploy the Network Operator bundle '%s'",
-					nnoBundleConfig.BundleImage)
-				err = deployBundle.DeployBundle(networkparams.LogLevel, nnoBundleConfig, nnoNamespace, 5*time.Minute)
+				glog.V(networkparams.LogLevel).Infof("Deploy the Network Operator bundle image '%s'",
+					deployBundleConfig.BundleImage)
+
+				err = deployBundle.DeployBundle(networkparams.LogLevel, &deployBundleConfig, nnoNamespace,
+					5*time.Minute)
 				Expect(err).ToNot(HaveOccurred(), "error from deploy.DeployBundle():  '%v' ", err)
 
 				glog.V(networkparams.LogLevel).Infof("Network Operator bundle image '%s' deployed successfully "+
-					"in namespace '%s", nnoBundleConfig.BundleImage, nnoNamespace)
+					"in namespace '%s", deployBundleConfig.BundleImage, nnoNamespace)
 
 			} else {
 				By("Create OperatorGroup in NVIDIA Network Operator Namespace")
@@ -609,10 +601,10 @@ var _ = Describe("NNO", Ordered, Label(tsparams.LabelSuite), func() {
 					err)
 			}
 
-			By("Wait up to 12 minutes for NicClusterPolicy to be ready")
+			By("Wait up to 24 minutes for NicClusterPolicy to be ready")
 			glog.V(networkparams.LogLevel).Infof("Waiting for NicClusterPolicy to be ready")
 			err = wait.NicClusterPolicyReady(inittools.APIClient, nnoNicClusterPolicyName, 60*time.Second,
-				12*time.Minute)
+				24*time.Minute)
 
 			glog.V(networkparams.LogLevel).Infof("error waiting for NicClusterPolicy to be Ready:  %v ", err)
 			Expect(err).ToNot(HaveOccurred(), "error waiting for NicClusterPolicy to be Ready: "+

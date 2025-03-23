@@ -14,7 +14,7 @@ const (
 	CatalogSourceNamespace           = "openshift-marketplace"
 	Package                          = "gpu-operator-certified"
 	ClusterPolicyName                = "gpu-cluster-policy"
-	OperatorDefaultMasterBundleImage = "registry.gitlab.com/nvidia/kubernetes/gpu-operator/staging/gpu-operator-bundle:main-latest"
+	OperatorDefaultMasterBundleImage = "ghcr.io/nvidia/gpu-operator/gpu-operator-bundle:main-latest"
 
 	CustomCatalogSourcePublisherName = "Red Hat"
 

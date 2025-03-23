@@ -6,23 +6,17 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/kelseyhightower/envconfig"
 	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/clients"
 	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/deployment"
 	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/namespace"
 	_ "go.uber.org/mock/mockgen/model"
 )
 
-//go:generate mockgen -package=deploy -destination mock_corev1.go k8s.io/client-go/kubernetes/typed/core/v1 CoreV1Interface,NamespaceInterface
-//go:generate mockgen -package=deploy -destination mock_appsv1.go k8s.io/client-go/kubernetes/typed/apps/v1 AppsV1Interface,DeploymentInterface
-
 type BundleConfig struct {
-	BundleImage string `required:"true" envconfig:"NVIDIAGPU_BUNDLE_IMAGE" default:"ghcr.io/nvidia/gpu-operator/gpu-operator-bundle:main-latest"`
+	BundleImage string
 }
 
-//go:generate mockgen -source=deploy.go -package=deploy -destination=mock_deploy.go
 type Deploy interface {
-	GetBundleConfig(logLevel glog.Level) (*BundleConfig, error)
 	CreateAndLabelNamespaceIfNeeded(logLevel glog.Level, targetNs string, labels map[string]string) (*namespace.Builder, error)
 	DeployBundle(logLevel glog.Level, bundleConfig *BundleConfig, ns string, timeout time.Duration) error
 	WaitForReadyStatus(logLevel glog.Level, name, ns string, timeout time.Duration) error
@@ -36,19 +30,6 @@ func NewDeploy(client *clients.Settings) Deploy {
 	return deploy{
 		client: client,
 	}
-}
-
-func (d deploy) GetBundleConfig(logLevel glog.Level) (*BundleConfig, error) {
-
-	glog.V(logLevel).Infof("Getting the GPU bundle configs")
-
-	var bundleConfig BundleConfig
-
-	if err := envconfig.Process("gpu", &bundleConfig); err != nil {
-		return nil, fmt.Errorf("failed to instantiate bundle configs: %v", err)
-	}
-
-	return &bundleConfig, nil
 }
 
 func (d deploy) CreateAndLabelNamespaceIfNeeded(logLevel glog.Level, ns string,

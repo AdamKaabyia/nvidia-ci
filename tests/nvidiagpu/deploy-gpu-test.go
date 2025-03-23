@@ -75,7 +75,7 @@ var (
 	OperatorUpgradeToChannel   = UndefinedValue
 	cleanupAfterTest           = true
 	deployFromBundle           = false
-	OperatorBundleImage        = ""
+	operatorBundleImage        = ""
 	CurrentCSV                 = ""
 	CurrentCSVVersion          = ""
 	clusterArchitecture        = UndefinedValue
@@ -84,7 +84,8 @@ var (
 var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 
 	var (
-		deployBundle deploy.Deploy
+		deployBundle       deploy.Deploy
+		deployBundleConfig deploy.BundleConfig
 	)
 
 	nvidiaGPUConfig = nvidiagpuconfig.NewNvidiaGPUConfig()
@@ -135,16 +136,17 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 
 			if nvidiaGPUConfig.DeployFromBundle {
 				deployFromBundle = nvidiaGPUConfig.DeployFromBundle
-				glog.V(gpuparams.GpuLogLevel).Infof("Flag deploy GPU operator from bundle is set to env variable "+
-					"NVIDIAGPU_DEPLOY_FROM_BUNDLE value '%v'", deployFromBundle)
+				glog.V(gpuparams.GpuLogLevel).Infof("Flag deploy GPU operator from bundle is set to env "+
+					"variable NVIDIAGPU_DEPLOY_FROM_BUNDLE value '%v'", deployFromBundle)
 				if nvidiaGPUConfig.BundleImage == "" {
 					glog.V(gpuparams.GpuLogLevel).Infof("env variable NVIDIAGPU_BUNDLE_IMAGE"+
-						" is not set, will use the default bundle image '%s'", nvidiagpu.OperatorDefaultMasterBundleImage)
-					OperatorBundleImage = nvidiagpu.OperatorDefaultMasterBundleImage
+						" is not set, will use the default bundle image '%s'",
+						nvidiagpu.OperatorDefaultMasterBundleImage)
+					operatorBundleImage = nvidiagpu.OperatorDefaultMasterBundleImage
 				} else {
-					OperatorBundleImage = nvidiaGPUConfig.BundleImage
+					operatorBundleImage = nvidiaGPUConfig.BundleImage
 					glog.V(gpuparams.GpuLogLevel).Infof("env variable NVIDIAGPU_BUNDLE_IMAGE"+
-						" is set, will use the specified bundle image '%s'", OperatorBundleImage)
+						" is set, will use the specified bundle image '%s'", operatorBundleImage)
 				}
 			} else {
 				glog.V(gpuparams.GpuLogLevel).Infof("env variable NVIDIAGPU_DEPLOY_FROM_BUNDLE" +
@@ -341,14 +343,11 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Check if GPU Operator Deployment is from Bundle")
 			if deployFromBundle {
-				glog.V(gpuparams.GpuLogLevel).Infof("Deploying GPU operator from bundle")
 				// This returns the Deploy interface object initialized with the API client
 				deployBundle = deploy.NewDeploy(inittools.APIClient)
-				gpuBundleConfig, err := deployBundle.GetBundleConfig(gpuparams.GpuLogLevel)
-				Expect(err).ToNot(HaveOccurred(), "error from deploy.GetBundleConfig %s ", err)
-				glog.V(gpuparams.GpuLogLevel).Infof("Extracted env var GPU_BUNDLE_IMAGE"+
-					" is '%s'", gpuBundleConfig.BundleImage)
-
+				deployBundleConfig.BundleImage = operatorBundleImage
+				glog.V(gpuparams.GpuLogLevel).Infof("Deploying GPU operator from bundle image '%s'",
+					deployBundleConfig.BundleImage)
 			} else {
 				glog.V(gpuparams.GpuLogLevel).Infof("Deploying GPU operator from catalogsource")
 
@@ -470,23 +469,17 @@ var _ = Describe("GPU", Ordered, Label(tsparams.LabelSuite), func() {
 
 			// Namespace needed to be created by this point or checked if created
 			if deployFromBundle {
-				glog.V(gpuparams.GpuLogLevel).Infof("Initializing the kube API Client before deploying bundle")
-				deployBundle = deploy.NewDeploy(inittools.APIClient)
-				gpuBundleConfig, err := deployBundle.GetBundleConfig(gpuparams.GpuLogLevel)
-				Expect(err).ToNot(HaveOccurred(), "error from deploy.GetBundleConfig %s ", err)
+				deployBundleConfig.BundleImage = operatorBundleImage
 
-				glog.V(gpuparams.GpuLogLevel).Infof("Extracted GPU Operator bundle image from env var "+
-					"NVIDIAGPU_BUNDLE_IMAGE '%s'", gpuBundleConfig.BundleImage)
+				glog.V(gpuparams.GpuLogLevel).Infof("Deploy the GPU Operator bundle image '%s'",
+					deployBundleConfig.BundleImage)
 
-				glog.V(gpuparams.GpuLogLevel).Infof("Deploy the GPU Operator bundle '%s'",
-					gpuBundleConfig.BundleImage)
-				err = deployBundle.DeployBundle(gpuparams.GpuLogLevel, gpuBundleConfig, nvidiagpu.NvidiaGPUNamespace,
+				err = deployBundle.DeployBundle(gpuparams.GpuLogLevel, &deployBundleConfig, nvidiagpu.NvidiaGPUNamespace,
 					nvidiagpu.GpuBundleDeploymentTimeout)
 				Expect(err).ToNot(HaveOccurred(), "error from deploy.DeployBundle():  '%v' ", err)
 
 				glog.V(gpuparams.GpuLogLevel).Infof("GPU Operator bundle image '%s' deployed successfully "+
-					"in namespace '%s", gpuBundleConfig.BundleImage, nvidiagpu.NvidiaGPUNamespace)
-
+					"in namespace '%s", deployBundleConfig.BundleImage, nvidiagpu.NvidiaGPUNamespace)
 			} else {
 				By("Create OperatorGroup in NVIDIA GPU Operator Namespace")
 				ogBuilder := olm.NewOperatorGroupBuilder(inittools.APIClient, nvidiagpu.OperatorGroupName, nvidiagpu.NvidiaGPUNamespace)
