@@ -36,6 +36,8 @@ jobs:
           echo "==== Debug: After Checkout ===="
           pwd
           ls -alh
+          echo "==== .gitignore check ===="
+          if [ -f .gitignore ]; then cat .gitignore; else echo "No .gitignore found."; fi
 
       ###################################################################
       # 3. PYTHON SETUP
@@ -58,8 +60,8 @@ jobs:
       ###################################################################
       - name: Run extraction script
         run: |
-          echo "==== Running generate_test_matrix_data.py ===="
-          python dashboard_matrix/generate_test_matrix_data.py
+          echo "==== Running generate_test_matrix_data.py with unbuffered mode ===="
+          python -u dashboard_matrix/generate_test_matrix_data.py
 
       ###################################################################
       # 5. PRE-COMMIT INSPECTION
@@ -84,7 +86,6 @@ jobs:
         uses: EndBug/add-and-commit@v7
         with:
           message: "Update test matrix data"
-          # Force-add the JSON file to ensure it's tracked, in case it's untracked
           add: "--force dashboard_matrix/ocp_data.json"
           push: "true"
 
@@ -108,6 +109,11 @@ jobs:
       ###################################################################
       # 9. DEPLOY
       ###################################################################
+      - name: Inspect output folder before deploy
+        run: |
+          echo "==== Checking output folder before deploy ===="
+          ls -alh dashboard_matrix/output || true
+
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
