@@ -24,9 +24,9 @@ jobs:
           ls -alh
 
       ###################################################################
-      # 2. CHECKOUT
+      # 2. CHECKOUT THE PR BRANCH
       ###################################################################
-      - name: Checkout code
+      - name: Checkout PR code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
@@ -56,7 +56,7 @@ jobs:
           pip install -r dashboard_matrix/requirements.txt
 
       ###################################################################
-      # 4. RUN EXTRACTION SCRIPT
+      # 4. RUN EXTRACTION SCRIPT (UPDATES dashboard_matrix/ocp_data.json)
       ###################################################################
       - name: Run extraction script
         run: |
@@ -64,11 +64,11 @@ jobs:
           python -u dashboard_matrix/generate_test_matrix_data.py
 
       ###################################################################
-      # 5. PRE-COMMIT INSPECTION
+      # 5. PRE-SWITCH INSPECTION
       ###################################################################
-      - name: Print JSON after script
+      - name: Show updated JSON
         run: |
-          echo "===== ocp_data.json AFTER SCRIPT ====="
+          echo "===== ocp_data.json AFTER SCRIPT (on PR branch) ====="
           cat dashboard_matrix/ocp_data.json || echo "File not found"
 
       - name: Show git diff
@@ -80,35 +80,55 @@ jobs:
           ls -alh dashboard_matrix/ocp_data.json || true
 
       ###################################################################
-      # 6. FORCE-ADD AND COMMIT
+      # 6. STASH OR COPY THE UPDATED FILE BEFORE SWITCHING BRANCHES
       ###################################################################
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v7
-        with:
-          message: "Update test matrix data"
-          # Force-add the JSON file to ensure it's tracked, in case it's untracked
-          add: "--force dashboard_matrix/ocp_data.json"
-          push: "true"
-
-      ###################################################################
-      # 7. POST-COMMIT INSPECTION
-      ###################################################################
-      - name: Print JSON after commit
+      - name: Copy updated JSON to a temp location
         run: |
-          echo "===== ocp_data.json AFTER COMMIT ====="
-          cat dashboard_matrix/ocp_data.json || echo "File not found"
-          echo "==== Debug: git log (last 5 commits) ===="
-          git log -5 --oneline
+          echo "==== Copying ocp_data.json to /tmp/ ===="
+          cp dashboard_matrix/ocp_data.json /tmp/updated_ocp_data.json
 
       ###################################################################
-      # 8. GENERATE HTML
+      # 7. CHECK OUT MAIN AND PULL LATEST
+      ###################################################################
+      - name: Checkout main
+        run: |
+          echo "==== Switching to main branch ===="
+          git fetch origin main
+          git checkout main
+          git pull origin main
+
+      ###################################################################
+      # 8. COPY UPDATED FILE ONTO MAIN
+      ###################################################################
+      - name: Overwrite ocp_data.json on main
+        run: |
+          echo "==== Copying updated file onto main branch ===="
+          cp /tmp/updated_ocp_data.json dashboard_matrix/ocp_data.json
+          ls -alh dashboard_matrix || true
+          cat dashboard_matrix/ocp_data.json || true
+
+      ###################################################################
+      # 9. COMMIT AND PUSH CHANGES TO MAIN
+      ###################################################################
+      - name: Commit changes to main
+        run: |
+          echo "==== Committing changes to main ===="
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+          git add dashboard_matrix/ocp_data.json
+          git commit -m "Update test matrix data from PR #${{ github.event.pull_request.number }}" || echo "No changes to commit"
+          git push origin main
+
+      ###################################################################
+      # 10. GENERATE HTML
       ###################################################################
       - name: Generate HTML
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
 
       ###################################################################
-      # 9. DEPLOY
+      # 11. DEPLOY
       ###################################################################
       - name: Inspect output folder before deploy
         run: |
