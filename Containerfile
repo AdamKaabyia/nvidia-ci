@@ -4,7 +4,7 @@ FROM registry.access.redhat.com/ubi9/go-toolset:1.21
 LABEL org.opencontainers.image.authors="Red Hat Ecosystem Engineering"
 
 USER root
-# Copying oc binary
+# Copying oc binary #########################################################
 COPY --from=oc-cli /usr/bin/oc /usr/bin/oc
 
 # Install dependencies: `operator-sdk`
