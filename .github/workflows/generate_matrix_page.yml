@@ -11,36 +11,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the PR branch
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
 
-      # Step 2: Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.13
+          python-version: "3.13"
 
-      # Step 3: Install dependencies
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r dashboard_matrix/requirements.txt
 
-      # Step 4: Run your extraction code
+      # Run the script that modifies ocp_data.json
       - name: Run extraction script
         run: |
           python dashboard_matrix/generate_test_matrix_data.py
 
-      # Step 5: Check contents before commit (debug)
       - name: Print JSON after script
         run: |
-          echo "=== ocp_data.json AFTER script ==="
+          echo "===== ocp_data.json AFTER SCRIPT ====="
           cat dashboard_matrix/ocp_data.json || echo "File not found"
 
-      # Step 6: Use EndBug/add-and-commit to commit changes
+      # Show the diff for debugging
+      - name: Show git diff
+        run: |
+          git diff
+          git status
+
+      # Use EndBug/add-and-commit
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
@@ -48,18 +50,18 @@ jobs:
           add: "dashboard_matrix/ocp_data.json"
           push: "true"
 
-      # Step 7: Print JSON after commit (debug)
+      # Another debug step
       - name: Print JSON after commit
         run: |
-          echo "=== ocp_data.json AFTER commit ==="
+          echo "===== ocp_data.json AFTER COMMIT ====="
           cat dashboard_matrix/ocp_data.json || echo "File not found"
 
-      # Step 8: Generate HTML page
+      # Generate HTML
       - name: Generate HTML
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
 
-      # Step 9: Deploy
+      # Deploy
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
