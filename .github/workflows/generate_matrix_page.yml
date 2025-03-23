@@ -11,11 +11,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      ###################################################################
+      # 1. ENVIRONMENT DEBUG
+      ###################################################################
+      - name: Print environment info
+        run: |
+          echo "==== Debug: Environment Variables ===="
+          env
+          echo "==== Debug: Current Working Directory ===="
+          pwd
+          echo "==== Debug: Directory Contents ===="
+          ls -alh
+
+      ###################################################################
+      # 2. CHECKOUT
+      ###################################################################
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
 
+      - name: Print environment info after checkout
+        run: |
+          echo "==== Debug: After Checkout ===="
+          pwd
+          ls -alh
+
+      ###################################################################
+      # 3. PYTHON SETUP
+      ###################################################################
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -23,13 +47,23 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python --version
+          pip --version
+          echo "==== Installing dependencies ===="
           pip install --upgrade pip
           pip install -r dashboard_matrix/requirements.txt
 
+      ###################################################################
+      # 4. RUN EXTRACTION SCRIPT
+      ###################################################################
       - name: Run extraction script
         run: |
+          echo "==== Running generate_test_matrix_data.py ===="
           python dashboard_matrix/generate_test_matrix_data.py
 
+      ###################################################################
+      # 5. PRE-COMMIT INSPECTION
+      ###################################################################
       - name: Print JSON after script
         run: |
           echo "===== ocp_data.json AFTER SCRIPT ====="
@@ -37,26 +71,43 @@ jobs:
 
       - name: Show git diff
         run: |
-          git diff
+          echo "==== Debug: git status and diff ===="
           git status
+          git diff
+          ls -alh dashboard_matrix || true
+          ls -alh dashboard_matrix/ocp_data.json || true
 
-      # IMPORTANT: Pass --force to the add param so that untracked files are forcibly tracked
+      ###################################################################
+      # 6. FORCE-ADD AND COMMIT
+      ###################################################################
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
           message: "Update test matrix data"
+          # Force-add the JSON file to ensure it's tracked, in case it's untracked
           add: "--force dashboard_matrix/ocp_data.json"
           push: "true"
 
+      ###################################################################
+      # 7. POST-COMMIT INSPECTION
+      ###################################################################
       - name: Print JSON after commit
         run: |
           echo "===== ocp_data.json AFTER COMMIT ====="
           cat dashboard_matrix/ocp_data.json || echo "File not found"
+          echo "==== Debug: git log (last 5 commits) ===="
+          git log -5 --oneline
 
+      ###################################################################
+      # 8. GENERATE HTML
+      ###################################################################
       - name: Generate HTML
         run: |
           python dashboard_matrix/generate_test_matrix_ui.py
 
+      ###################################################################
+      # 9. DEPLOY
+      ###################################################################
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
