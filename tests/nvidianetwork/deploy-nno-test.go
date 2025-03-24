@@ -2,9 +2,13 @@ package nvidianetwork
 
 import (
 	"encoding/json"
+
 	"github.com/rh-ecosystem-edge/nvidia-ci/internal/inittools"
 	"github.com/rh-ecosystem-edge/nvidia-ci/internal/nvidianetworkconfig"
 	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/nfdcheck"
+
+	"os"
+	"time"
 
 	"github.com/golang/glog"
 	. "github.com/onsi/ginkgo/v2"
@@ -13,8 +17,6 @@ import (
 	. "github.com/rh-ecosystem-edge/nvidia-ci/pkg/global"
 	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/namespace"
 	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/nfd"
-	"os"
-	"time"
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/rh-ecosystem-edge/nvidia-ci/internal/check"
@@ -71,6 +73,7 @@ const (
 	nnoCatalogSourceNamespace = nfd.CatalogSourceNamespace
 	nnoPackage                = "nvidia-network-operator"
 	nnoNicClusterPolicyName   = "nic-cluster-policy"
+	nnoMacvlanNetworkName     = "example-macvlannetwork"
 
 	nnoCustomCatalogSourcePublisherName = "Red Hat"
 	nnoCustomCatalogSourceDisplayName   = "Certified Operators Custom"
@@ -562,7 +565,8 @@ var _ = Describe("NNO", Ordered, Label(tsparams.LabelSuite), func() {
 
 			By("Deploy NicClusterPolicy")
 			glog.V(networkparams.LogLevel).Infof("Creating NicClusterPolicy from CSV almExamples")
-			nicClusterPolicyBuilder := nvidianetwork.NewBuilderFromObjectString(inittools.APIClient, almExamples)
+			nicClusterPolicyBuilder := nvidianetwork.NewNicClusterPolicyBuilderFromObjectString(inittools.APIClient,
+				almExamples)
 
 			By("Updating NicClusterPolicyBuilder object driver version and driver repository from values in env vars")
 			glog.V(networkparams.LogLevel).Infof("Updating NicClusterPolicyBuilder object driver version and " +
@@ -585,8 +589,9 @@ var _ = Describe("NNO", Ordered, Label(tsparams.LabelSuite), func() {
 			}()
 
 			By("Pull the NicClusterPolicy just created from cluster, with updated fields")
-			pulledNicClusterPolicy, err := nvidianetwork.Pull(inittools.APIClient, nnoNicClusterPolicyName)
-			Expect(err).ToNot(HaveOccurred(), "error pulling ClusterPolicy %s from cluster: "+
+			pulledNicClusterPolicy, err := nvidianetwork.PullNicClusterPolicy(inittools.APIClient,
+				nnoNicClusterPolicyName)
+			Expect(err).ToNot(HaveOccurred(), "error pulling NicClusterPolicy %s from cluster: "+
 				" %v ", nnoNicClusterPolicyName, err)
 
 			cpJSON, err := json.MarshalIndent(pulledNicClusterPolicy, "", " ")
@@ -611,19 +616,92 @@ var _ = Describe("NNO", Ordered, Label(tsparams.LabelSuite), func() {
 				" %v ", err)
 
 			By("Pull the ready NicClusterPolicy from cluster, with updated fields")
-			pulledReadyNicClusterPolicy, err := nvidianetwork.Pull(inittools.APIClient, nnoNicClusterPolicyName)
+			pulledReadyNicClusterPolicy, err := nvidianetwork.PullNicClusterPolicy(inittools.APIClient,
+				nnoNicClusterPolicyName)
 			Expect(err).ToNot(HaveOccurred(), "error pulling NicClusterPolicy %s from cluster: "+
 				" %v ", nnoNicClusterPolicyName, err)
 
-			cpReadyJSON, err := json.MarshalIndent(pulledReadyNicClusterPolicy, "", " ")
+			ncpReadyJSON, err := json.MarshalIndent(pulledReadyNicClusterPolicy, "", " ")
 
 			if err == nil {
 				glog.V(networkparams.LogLevel).Infof("The ready NicClusterPolicy just has name:  %v",
 					pulledReadyNicClusterPolicy.Definition.Name)
 				glog.V(networkparams.LogLevel).Infof("The ready NicClusterPolicy just marshalled "+
-					"in json: %v", string(cpReadyJSON))
+					"in json: %v", string(ncpReadyJSON))
 			} else {
 				glog.V(networkparams.LogLevel).Infof("Error Marshalling the ready NicClusterPolicy into "+
+					"json:  %v", err)
+			}
+
+			// ===== 03-22-2025: MacvlanNetwork
+			By("Deploy MacvlanNetwork")
+			glog.V(networkparams.LogLevel).Infof("Creating MacvlanNetwork from CSV almExamples")
+			macvlanNetworkBuilder := nvidianetwork.NewMacvlanNetworkBuilderFromObjectString(inittools.APIClient,
+				almExamples)
+
+			By("Updating MacvlanNetworkBuilder object driver version and driver repository from values in env vars")
+			glog.V(networkparams.LogLevel).Infof("Updating MacvlanNetworkBuilder object ipam and " +
+				"master with values passed in env variables")
+			macvlanNetworkBuilder.Definition.Spec.IPAM =
+				"{\"type\": \"whereabouts\", \"range\": \"192.168.12.0/24\", \"gateway\": \"192.168.12.1\"}"
+			macvlanNetworkBuilder.Definition.Spec.Master = "enP12p1s0f0np0"
+
+			By("Deploy MacvlanNetwork")
+			createdMacvlanNetworkBuilder, err := macvlanNetworkBuilder.Create()
+			Expect(err).ToNot(HaveOccurred(), "Error Creating MacvlanNetwork from csv "+
+				"almExamples  %v ", err)
+			glog.V(networkparams.LogLevel).Infof("MacvlanNetwork '%s' is successfully created",
+				createdMacvlanNetworkBuilder.Definition.Name)
+
+			defer func() {
+				if cleanupAfterTest {
+					_, err := createdMacvlanNetworkBuilder.Delete()
+					Expect(err).ToNot(HaveOccurred())
+				}
+			}()
+
+			By("Pull the MacvlanNetwork just created from cluster, with updated fields")
+			pulledMacvlanNetwork, err := nvidianetwork.PullMacvlanNetwork(inittools.APIClient,
+				nnoMacvlanNetworkName)
+			Expect(err).ToNot(HaveOccurred(), "error pulling MacvlanNetwork %s from cluster: "+
+				" %v ", nnoMacvlanNetworkName, err)
+
+			mvnJSON, err := json.MarshalIndent(pulledMacvlanNetwork, "", " ")
+
+			if err == nil {
+				glog.V(networkparams.LogLevel).Infof("The MacvlanNetwork just created has name:  %v",
+					pulledMacvlanNetwork.Definition.Name)
+				glog.V(networkparams.LogLevel).Infof("The MacvlanNetwork just created marshalled "+
+					"in json: %v", string(mvnJSON))
+			} else {
+				glog.V(networkparams.LogLevel).Infof("Error Marshalling MacvlanNetwork into json:  %v",
+					err)
+			}
+
+			By("Wait up to 5 minutes for MacvlanNetwork to be ready")
+			glog.V(networkparams.LogLevel).Infof("Waiting for MacvlanNetwork to be ready")
+			err = wait.MacvlanNetworkReady(inittools.APIClient, nnoMacvlanNetworkName, 60*time.Second,
+				5*time.Minute)
+
+			glog.V(networkparams.LogLevel).Infof("error waiting for MacvlanNetwork to be Ready:  %v ", err)
+			Expect(err).ToNot(HaveOccurred(), "error waiting for MacvlanNetwork to be Ready: "+
+				" %v ", err)
+
+			By("Pull the ready MacvlanNetwork from cluster, with updated fields")
+			pulledReadyMacvlanNetwork, err := nvidianetwork.PullMacvlanNetwork(inittools.APIClient,
+				nnoMacvlanNetworkName)
+			Expect(err).ToNot(HaveOccurred(), "error pulling MacvlanNetwork %s from cluster: "+
+				" %v ", nnoMacvlanNetworkName, err)
+
+			cpReadyJSON, err := json.MarshalIndent(pulledReadyMacvlanNetwork, "", " ")
+
+			if err == nil {
+				glog.V(networkparams.LogLevel).Infof("The ready MacvlanNetwork just has name:  %v",
+					pulledReadyMacvlanNetwork.Definition.Name)
+				glog.V(networkparams.LogLevel).Infof("The ready MacvlanNetwork just marshalled "+
+					"in json: %v", string(cpReadyJSON))
+			} else {
+				glog.V(networkparams.LogLevel).Infof("Error Marshalling the ready MacvlanNetwork into "+
 					"json:  %v", err)
 			}
 		})

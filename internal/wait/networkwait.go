@@ -2,8 +2,9 @@ package wait
 
 import (
 	"context"
-	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/nvidianetwork"
 	"time"
+
+	"github.com/rh-ecosystem-edge/nvidia-ci/pkg/nvidianetwork"
 
 	"github.com/golang/glog"
 	"github.com/rh-ecosystem-edge/nvidia-ci/internal/networkparams"
@@ -18,7 +19,7 @@ func NicClusterPolicyReady(apiClient *clients.Settings, nicClusterPolicyName str
 	timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(
 		context.Background(), pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
-			nicClusterPolicy, err := nvidianetwork.Pull(apiClient, nicClusterPolicyName)
+			nicClusterPolicy, err := nvidianetwork.PullNicClusterPolicy(apiClient, nicClusterPolicyName)
 
 			if err != nil {
 				glog.V(networkparams.LogLevel).Infof("NicClusterPolicy pull from cluster error: %s\n", err)
@@ -31,5 +32,26 @@ func NicClusterPolicyReady(apiClient *clients.Settings, nicClusterPolicyName str
 
 			// returns true, nil when NicClusterPolicy is ready, this exits out of the PollUntilContextTimeout()
 			return nicClusterPolicy.Object.Status.State == networkoperator.StateReady, nil
+		})
+}
+
+// MacvlanNetworkReady Waits until macvlanNetwork is Ready.
+func MacvlanNetworkReady(apiClient *clients.Settings, macvlanNetworkName string, pollInterval,
+	timeout time.Duration) error {
+	return wait.PollUntilContextTimeout(
+		context.Background(), pollInterval, timeout, true, func(ctx context.Context) (bool, error) {
+			macVlanNetwork, err := nvidianetwork.PullMacvlanNetwork(apiClient, macvlanNetworkName)
+
+			if err != nil {
+				glog.V(networkparams.LogLevel).Infof("MacvlanNetwork pull from cluster error: %s\n", err)
+
+				return false, err
+			}
+
+			glog.V(networkparams.LogLevel).Infof("MacvlanNetwork %s in now in %s state",
+				macVlanNetwork.Object.Name, macVlanNetwork.Object.Status.State)
+
+			// returns true, nil when MacvlanNetwork is ready, this exits out of the PollUntilContextTimeout()
+			return macVlanNetwork.Object.Status.State == networkoperator.StateReady, nil
 		})
 }

@@ -14,24 +14,24 @@ import (
 	goclient "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// Builder provides a struct for NicClusterPolicy object
+// NicClusterPolicyBuilder provides a struct for NicClusterPolicy object
 // from the cluster and a NicClusterPolicy definition.
-type Builder struct {
-	// Builder definition. Used to create
-	// Builder object with minimum set of required elements.
+type NicClusterPolicyBuilder struct {
+	// NicClusterPolicyBuilder definition. Used to create
+	// NicClusterPolicyBuilder object with minimum set of required elements.
 	Definition *nvidianetworkv1alpha1.NicClusterPolicy
-	// Created Builder object on the cluster.
+	// Created NicClusterPolicyBuilder object on the cluster.
 	Object *nvidianetworkv1alpha1.NicClusterPolicy
 	// api client to interact with the cluster.
 	apiClient *clients.Settings
-	// errorMsg is processed before Builder object is created.
+	// errorMsg is processed before NicClusterPolicyBuilder object is created.
 	errorMsg string
 }
 
-// NewBuilderFromObjectString creates a Builder object from CSV alm-examples.
-func NewBuilderFromObjectString(apiClient *clients.Settings, almExample string) *Builder {
+// NewNicClusterPolicyBuilderFromObjectString creates a NicClusterPolicyBuilder object from CSV alm-examples.
+func NewNicClusterPolicyBuilderFromObjectString(apiClient *clients.Settings, almExample string) *NicClusterPolicyBuilder {
 	glog.V(100).Infof(
-		"Initializing new Builder structure from almExample string")
+		"Initializing new NicClusterPolicyBuilder structure from almExample string")
 
 	nicClusterPolicy, err := getNicClusterPolicyFromAlmExample(almExample)
 
@@ -39,7 +39,7 @@ func NewBuilderFromObjectString(apiClient *clients.Settings, almExample string) 
 		glog.V(100).Infof(
 			"Error initializing NicClusterPolicy from alm-examples: %s", err.Error())
 
-		builder := Builder{
+		builder := NicClusterPolicyBuilder{
 			apiClient: apiClient,
 			errorMsg:  fmt.Sprintf("Error initializing NicClusterPolicy from alm-examples: %s", err.Error()),
 		}
@@ -48,7 +48,7 @@ func NewBuilderFromObjectString(apiClient *clients.Settings, almExample string) 
 	}
 
 	if nicClusterPolicy == nil {
-		builder := Builder{
+		builder := NicClusterPolicyBuilder{
 			apiClient: apiClient,
 			errorMsg:  "NicClusterPolicy is nil after parsing almExample",
 		}
@@ -56,10 +56,10 @@ func NewBuilderFromObjectString(apiClient *clients.Settings, almExample string) 
 	}
 
 	glog.V(100).Infof(
-		"Initializing new Builder structure from almExample string with NicClusterPolicy name: %s",
+		"Initializing new NicClusterPolicyBuilder structure from almExample string with NicClusterPolicy name: %s",
 		nicClusterPolicy.Name)
 
-	builder := Builder{
+	builder := NicClusterPolicyBuilder{
 		apiClient:  apiClient,
 		Definition: nicClusterPolicy,
 	}
@@ -74,7 +74,7 @@ func NewBuilderFromObjectString(apiClient *clients.Settings, almExample string) 
 }
 
 // Get returns nicclusterPolicy object if found.
-func (builder *Builder) Get() (*nvidianetworkv1alpha1.NicClusterPolicy, error) {
+func (builder *NicClusterPolicyBuilder) Get() (*nvidianetworkv1alpha1.NicClusterPolicy, error) {
 	if valid, err := builder.validate(); !valid {
 		return nil, err
 	}
@@ -97,11 +97,11 @@ func (builder *Builder) Get() (*nvidianetworkv1alpha1.NicClusterPolicy, error) {
 	return nicClusterPolicy, err
 }
 
-// Pull loads an existing NicClusterPolicy into Builder struct.
-func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
+// PullNicClusterPolicy loads an existing NicClusterPolicy into NicClusterPolicyBuilder struct.
+func PullNicClusterPolicy(apiClient *clients.Settings, name string) (*NicClusterPolicyBuilder, error) {
 	glog.V(100).Infof("Pulling existing nicClusterPolicy name: %s", name)
 
-	builder := Builder{
+	builder := NicClusterPolicyBuilder{
 		apiClient: apiClient,
 		Definition: &nvidianetworkv1alpha1.NicClusterPolicy{
 			ObjectMeta: metav1.ObjectMeta{
@@ -127,7 +127,7 @@ func Pull(apiClient *clients.Settings, name string) (*Builder, error) {
 }
 
 // Exists checks whether the given NicClusterPolicy exists.
-func (builder *Builder) Exists() bool {
+func (builder *NicClusterPolicyBuilder) Exists() bool {
 	if valid, _ := builder.validate(); !valid {
 		return false
 	}
@@ -146,7 +146,7 @@ func (builder *Builder) Exists() bool {
 }
 
 // Delete removes a NicClusterPolicy.
-func (builder *Builder) Delete() (*Builder, error) {
+func (builder *NicClusterPolicyBuilder) Delete() (*NicClusterPolicyBuilder, error) {
 	if valid, err := builder.validate(); !valid {
 		return builder, err
 	}
@@ -169,7 +169,7 @@ func (builder *Builder) Delete() (*Builder, error) {
 }
 
 // Create makes a NicClusterPolicy in the cluster and stores the created object in struct.
-func (builder *Builder) Create() (*Builder, error) {
+func (builder *NicClusterPolicyBuilder) Create() (*NicClusterPolicyBuilder, error) {
 	if valid, err := builder.validate(); !valid {
 		return builder, err
 	}
@@ -192,7 +192,7 @@ func (builder *Builder) Create() (*Builder, error) {
 }
 
 // Update renovates the existing NicClusterPolicy object with the definition in builder.
-func (builder *Builder) Update(force bool) (*Builder, error) {
+func (builder *NicClusterPolicyBuilder) Update(force bool) (*NicClusterPolicyBuilder, error) {
 	if valid, err := builder.validate(); !valid {
 		return builder, err
 	}
@@ -252,7 +252,7 @@ func getNicClusterPolicyFromAlmExample(almExample string) (*nvidianetworkv1alpha
 
 // validate will check that the builder and builder definition are properly initialized before
 // accessing any member fields.
-func (builder *Builder) validate() (bool, error) {
+func (builder *NicClusterPolicyBuilder) validate() (bool, error) {
 	resourceCRD := nvidianetworkv1alpha1.NicClusterPolicyCRDName
 	if builder == nil {
 		glog.V(100).Infof("The %s builder is uninitialized", resourceCRD)
