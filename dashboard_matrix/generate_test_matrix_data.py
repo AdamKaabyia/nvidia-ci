@@ -2,7 +2,7 @@ import urllib.parse
 import requests
 import re
 import urllib
-from utils import *
+from store_data import *
 from logger import logger
 
 # Error handling function

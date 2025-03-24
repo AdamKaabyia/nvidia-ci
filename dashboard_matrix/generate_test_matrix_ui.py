@@ -1,5 +1,5 @@
 import json
-from utils import logger
+from store_data import logger
 import os
 from datetime import datetime, timezone
 
