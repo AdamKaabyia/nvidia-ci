@@ -1,4 +1,3 @@
 /workflows/generated-files/
 /workflows/__pycache__/
-/pr_matrix/venv/
-/dashboard_matrix/venv/
+/workflows/dashboard_matrix/venv/

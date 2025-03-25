@@ -16,52 +16,29 @@ on:
         description: 'PR number to process (leave empty to process all history)'
         required: false
         type: string
-      process_mode:
-        description: 'Processing mode: choose "last" to process only the last PR or "all" to process all history'
-        required: false
-        default: 'last'
-        type: string
-        options:
-          - last
-          - all
 
 jobs:
   generate-matrix:
     runs-on: ubuntu-latest
-    # Run if:
-    # - manually triggered, OR
-    # - a pull request event where the PR is merged and the title starts with "[Automatic] Update versions"
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, '[Automatic] Update versions')) }}
     env:
       OUTPUT_DIR: 'workflows/test_matrix_dashboard/output'
+      # Set to "latest" to process only the latest PR, or "all" to process all PR history
+      PULL_MERGED_MODE: 'latest'
     steps:
-      - name: Determine PR and Processing Mode
+      - name: Determine PR Number
         id: determine_pr
         shell: bash
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
-            # For automatic triggers, use the merged PR number.
-            pr_num="${{ github.event.pull_request.number }}"
-            pr_title="${{ github.event.pull_request.title }}"
-            echo "Merged PR: $pr_num"
-            # If the PR title contains "[all]", then process all history.
-            if [[ "$pr_title" == *"[all]"* ]]; then
-              echo "Detected [all] in PR title; processing all history"
-              process_mode="all"
+            if [ "${{ env.PULL_MERGED_MODE }}" == "all" ]; then
+              echo "Processing all PR history for merged pull request."
+              echo "PR_NUMBER=all" >> "$GITHUB_OUTPUT"
             else
-              process_mode="last"
+              pr_num="${{ github.event.pull_request.number }}"
+              echo "Merged PR: $pr_num"
+              echo "PR_NUMBER=$pr_num" >> "$GITHUB_OUTPUT"
             fi
-            echo "PR_NUMBER=$pr_num" >> "$GITHUB_OUTPUT"
-            echo "PROCESS_MODE=$process_mode" >> "$GITHUB_OUTPUT"
           else
-            # For manual triggers via workflow_dispatch.
-            # Validate the process_mode input.
-            allowed_modes=("last" "all")
-            if [[ ! " ${allowed_modes[@]} " =~ " ${{ github.event.inputs.process_mode }} " ]]; then
-              echo "Invalid process_mode: ${{ github.event.inputs.process_mode }}. Allowed values: last, all."
-              exit 1
-            fi
-
             if [ -n "${{ github.event.inputs.pr_number }}" ]; then
               echo "Using manually specified PR: ${{ github.event.inputs.pr_number }}"
               echo "PR_NUMBER=${{ github.event.inputs.pr_number }}" >> "$GITHUB_OUTPUT"
@@ -69,7 +46,6 @@ jobs:
               echo "No specific PR provided; processing all history"
               echo "PR_NUMBER=all" >> "$GITHUB_OUTPUT"
             fi
-            echo "PROCESS_MODE=${{ github.event.inputs.process_mode }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Checkout Code
@@ -102,11 +78,9 @@ jobs:
 
       - name: Run Extraction Script
         run: |
-          echo "Processing mode: ${{ steps.determine_pr.outputs.PROCESS_MODE }}"
           echo "Processing PR: ${{ steps.determine_pr.outputs.PR_NUMBER }}"
           python workflows/test_matrix_dashboard/generate_test_matrix_data.py \
             --pr "${{ steps.determine_pr.outputs.PR_NUMBER }}" \
-            --process_mode "${{ steps.determine_pr.outputs.PROCESS_MODE }}" \
             --output_dir "${OUTPUT_DIR}" \
             --old_data_file old_ocp_data.json
           git diff
