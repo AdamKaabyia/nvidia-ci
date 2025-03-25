@@ -91,21 +91,24 @@ jobs:
 
       - name: Commit JSON and HTML to gh-pages
         run: |
-          echo "==== Committing JSON and HTML to gh-pages ===="
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
-          # Move the generated output to a temporary directory
-          mv "${OUTPUT_DIR}" /tmp/output
-          # Fetch and check out the latest gh-pages branch
-          git fetch origin gh-pages
-          git checkout -B gh-pages origin/gh-pages
-          # Copy the generated files from the temporary directory to the root of the branch
-          cp -R /tmp/output/. .
-          # Stage and commit changes
-          git add .
-          git commit -m "Update test matrix data and HTML from PR #${{ steps.determine_pr.outputs.PR_NUMBER }}" || echo "No changes to commit"
-          git push origin gh-pages
-
+            echo "==== Committing JSON and HTML to gh-pages ===="
+            git config user.name "${{ github.actor }}"
+            git config user.email "${{ github.actor }}@users.noreply.github.com"
+            # Remove untracked files that might conflict with checkout
+            rm -f old_ocp_data.json
+            rm -rf workflows/test_matrix_dashboard/__pycache__
+            # Move the generated output to a temporary directory
+            mv "${OUTPUT_DIR}" /tmp/output
+            # Fetch and check out the latest gh-pages branch
+            git fetch origin gh-pages
+            git checkout -B gh-pages origin/gh-pages
+            # Copy the generated files from the temporary directory to the root of the branch
+            cp -R /tmp/output/. .
+            # Stage and commit changes
+            git add .
+            git commit -m "Update test matrix data and HTML from PR #${{ steps.determine_pr.outputs.PR_NUMBER }}" || echo "No changes to commit"
+            git push origin gh-pages
+        
       - name: Deploy HTML to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
