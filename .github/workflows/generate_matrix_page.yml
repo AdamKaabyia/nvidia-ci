@@ -83,13 +83,13 @@ jobs:
             --pr "${{ steps.determine_pr.outputs.PR_NUMBER }}" \
             --output_dir "${OUTPUT_DIR}" \
             --old_data_file old_ocp_data.json
-          git diff
+          
 
       - name: Generate UI
         run: |
           echo "Generating UI using output from ${OUTPUT_DIR}"
           python workflows/test_matrix_dashboard/generate_test_matrix_ui.py --output_dir "${OUTPUT_DIR}"
-          git diff
+          
 
           - name: Commit JSON and HTML to gh-pages
           run: |
