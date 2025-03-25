@@ -1,0 +1,136 @@
+name: testing workflow
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to check out (default is main)'
+        default: 'main'
+        required: false
+        type: string
+      pr_number:
+        description: 'PR number to process (leave empty to process all history)'
+        required: false
+        type: string
+      process_mode:
+        description: 'Processing mode: choose "last" to process only the last PR or "all" to process all history'
+        required: false
+        default: 'last'
+        type: string
+        options:
+          - last
+          - all
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    # Run if:
+    # - manually triggered, OR
+    # - a pull request event where the PR is merged and the title starts with "[Automatic] Update versions"
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, '[Automatic] Update versions')) }}
+    env:
+      OUTPUT_DIR: 'workflows/test_matrix_dashboard/output'
+    steps:
+      - name: Determine PR and Processing Mode
+        id: determine_pr
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For automatic triggers, use the merged PR number.
+            pr_num="${{ github.event.pull_request.number }}"
+            pr_title="${{ github.event.pull_request.title }}"
+            echo "Merged PR: $pr_num"
+            # If the PR title contains "[all]", then process all history.
+            if [[ "$pr_title" == *"[all]"* ]]; then
+              echo "Detected [all] in PR title; processing all history"
+              process_mode="all"
+            else
+              process_mode="last"
+            fi
+            echo "PR_NUMBER=$pr_num" >> "$GITHUB_OUTPUT"
+            echo "PROCESS_MODE=$process_mode" >> "$GITHUB_OUTPUT"
+          else
+            # For manual triggers via workflow_dispatch.
+            # Validate the process_mode input.
+            allowed_modes=("last" "all")
+            if [[ ! " ${allowed_modes[@]} " =~ " ${{ github.event.inputs.process_mode }} " ]]; then
+              echo "Invalid process_mode: ${{ github.event.inputs.process_mode }}. Allowed values: last, all."
+              exit 1
+            fi
+
+            if [ -n "${{ github.event.inputs.pr_number }}" ]; then
+              echo "Using manually specified PR: ${{ github.event.inputs.pr_number }}"
+              echo "PR_NUMBER=${{ github.event.inputs.pr_number }}" >> "$GITHUB_OUTPUT"
+            else
+              echo "No specific PR provided; processing all history"
+              echo "PR_NUMBER=all" >> "$GITHUB_OUTPUT"
+            fi
+            echo "PROCESS_MODE=${{ github.event.inputs.process_mode }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          # For automatic triggers, use the PR's head ref; for manual, use the provided branch.
+          ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
+
+      - name: Extract existing ocp_data.json from gh-pages
+        id: extract_json
+        shell: bash
+        run: |
+          echo "Extracting ocp_data.json from gh-pages branch..."
+          git fetch origin gh-pages
+          if git show origin/gh-pages:ocp_data.json > old_ocp_data.json 2>/dev/null; then
+            echo "Existing ocp_data.json extracted."
+          else
+            echo "{}" > old_ocp_data.json
+            echo "No ocp_data.json found in gh-pages; starting with empty JSON."
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Dependencies
+        run: |
+          pip install -r workflows/test_matrix_dashboard/requirements.txt
+
+      - name: Run Extraction Script
+        run: |
+          echo "Processing mode: ${{ steps.determine_pr.outputs.PROCESS_MODE }}"
+          echo "Processing PR: ${{ steps.determine_pr.outputs.PR_NUMBER }}"
+          python workflows/test_matrix_dashboard/generate_test_matrix_data.py \
+            --pr "${{ steps.determine_pr.outputs.PR_NUMBER }}" \
+            --process_mode "${{ steps.determine_pr.outputs.PROCESS_MODE }}" \
+            --output_dir "${OUTPUT_DIR}" \
+            --old_data_file old_ocp_data.json
+          git diff
+
+      - name: Generate UI
+        run: |
+          echo "Generating UI using output from ${OUTPUT_DIR}"
+          python workflows/test_matrix_dashboard/generate_test_matrix_ui.py --output_dir "${OUTPUT_DIR}"
+          git diff
+
+      - name: Commit JSON and HTML to gh-pages
+        run: |
+          echo "==== Committing JSON and HTML to gh-pages ===="
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          # Ensure the OUTPUT_DIR exists and add its contents.
+          mkdir -p "${OUTPUT_DIR}"
+          git add "${OUTPUT_DIR}"
+          git commit -m "Update test matrix data and HTML from PR #${{ steps.determine_pr.outputs.PR_NUMBER }}" || echo "No changes to commit"
+          git push origin HEAD:gh-pages
+
+      - name: Deploy HTML to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: ${{ env.OUTPUT_DIR }}
+          token: ${{ secrets.GITHUB_TOKEN }}
