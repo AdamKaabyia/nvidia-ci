@@ -97,6 +97,7 @@ jobs:
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
           # Ensure the OUTPUT_DIR exists and add its contents.
+          git pull
           mkdir -p "${OUTPUT_DIR}"
           git add "${OUTPUT_DIR}"
           git commit -m "Update test matrix data and HTML from PR #${{ steps.determine_pr.outputs.PR_NUMBER }}" || echo "No changes to commit"
