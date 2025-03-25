@@ -1,4 +1,4 @@
-name: testing workflow
+name: Generate test matrices pages
 
 on:
   pull_request:
