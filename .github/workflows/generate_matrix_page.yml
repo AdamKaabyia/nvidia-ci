@@ -1,149 +1,136 @@
-name: Generate test matrices pages
+name: testing workflow
 
 on:
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened]
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to check out (default is main)'
+        default: 'main'
+        required: false
+        type: string
+      pr_number:
+        description: 'PR number to process (leave empty to process all history)'
+        required: false
+        type: string
+      process_mode:
+        description: 'Processing mode: choose "last" to process only the last PR or "all" to process all history'
+        required: false
+        default: 'last'
+        type: string
+        options:
+          - last
+          - all
 
 jobs:
   generate-matrix:
     runs-on: ubuntu-latest
-
+    # Run if:
+    # - manually triggered, OR
+    # - a pull request event where the PR is merged and the title starts with "[Automatic] Update versions"
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, '[Automatic] Update versions')) }}
+    env:
+      OUTPUT_DIR: 'workflows/test_matrix_dashboard/output'
     steps:
-      ###################################################################
-      # 1. ENVIRONMENT DEBUG
-      ###################################################################
-      - name: Print environment info
+      - name: Determine PR and Processing Mode
+        id: determine_pr
+        shell: bash
         run: |
-          echo "==== Debug: Environment Variables ===="
-          env
-          echo "==== Debug: Current Working Directory ===="
-          pwd
-          echo "==== Debug: Directory Contents ===="
-          ls -alh
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            # For automatic triggers, use the merged PR number.
+            pr_num="${{ github.event.pull_request.number }}"
+            pr_title="${{ github.event.pull_request.title }}"
+            echo "Merged PR: $pr_num"
+            # If the PR title contains "[all]", then process all history.
+            if [[ "$pr_title" == *"[all]"* ]]; then
+              echo "Detected [all] in PR title; processing all history"
+              process_mode="all"
+            else
+              process_mode="last"
+            fi
+            echo "PR_NUMBER=$pr_num" >> "$GITHUB_OUTPUT"
+            echo "PROCESS_MODE=$process_mode" >> "$GITHUB_OUTPUT"
+          else
+            # For manual triggers via workflow_dispatch.
+            # Validate the process_mode input.
+            allowed_modes=("last" "all")
+            if [[ ! " ${allowed_modes[@]} " =~ " ${{ github.event.inputs.process_mode }} " ]]; then
+              echo "Invalid process_mode: ${{ github.event.inputs.process_mode }}. Allowed values: last, all."
+              exit 1
+            fi
 
-      ###################################################################
-      # 2. CHECK OUT THE PR BRANCH
-      ###################################################################
-      - name: Checkout PR code
+            if [ -n "${{ github.event.inputs.pr_number }}" ]; then
+              echo "Using manually specified PR: ${{ github.event.inputs.pr_number }}"
+              echo "PR_NUMBER=${{ github.event.inputs.pr_number }}" >> "$GITHUB_OUTPUT"
+            else
+              echo "No specific PR provided; processing all history"
+              echo "PR_NUMBER=all" >> "$GITHUB_OUTPUT"
+            fi
+            echo "PROCESS_MODE=${{ github.event.inputs.process_mode }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          # For automatic triggers, use the PR's head ref; for manual, use the provided branch.
+          ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
 
-      - name: Print environment info after checkout
+      - name: Extract existing ocp_data.json from gh-pages
+        id: extract_json
+        shell: bash
         run: |
-          echo "==== Debug: After Checkout ===="
-          pwd
-          ls -alh
-          echo "==== .gitignore check ===="
-          if [ -f .gitignore ]; then cat .gitignore; else echo "No .gitignore found."; fi
+          echo "Extracting ocp_data.json from gh-pages branch..."
+          git fetch origin gh-pages
+          if git show origin/gh-pages:ocp_data.json > old_ocp_data.json 2>/dev/null; then
+            echo "Existing ocp_data.json extracted."
+          else
+            echo "{}" > old_ocp_data.json
+            echo "No ocp_data.json found in gh-pages; starting with empty JSON."
+          fi
 
-      ###################################################################
-      # 3. SET UP PYTHON & INSTALL DEPENDENCIES
-      ###################################################################
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
-          python --version
-          pip --version
-          echo "==== Installing dependencies ===="
-          pip install --upgrade pip
-          pip install -r dashboard_matrix/requirements.txt
+          pip install -r workflows/test_matrix_dashboard/requirements.txt
 
-      ###################################################################
-      # 4. RUN EXTRACTION SCRIPT (UPDATES dashboard_matrix/ocp_data.json)
-      ###################################################################
-      - name: Run extraction script
+      - name: Run Extraction Script
         run: |
-          echo "==== Running generate_test_matrix_data.py with unbuffered mode ===="
-          python -u dashboard_matrix/generate_test_matrix_data.py
-
-      ###################################################################
-      # 5. PRE-SWITCH INSPECTION (DEBUG)
-      ###################################################################
-      - name: Show updated JSON
-        run: |
-          echo "===== ocp_data.json AFTER SCRIPT (on PR branch) ====="
-          cat dashboard_matrix/ocp_data.json || echo "File not found"
-
-      - name: Show git diff
-        run: |
-          echo "==== Debug: git status and diff ===="
-          git status
+          echo "Processing mode: ${{ steps.determine_pr.outputs.PROCESS_MODE }}"
+          echo "Processing PR: ${{ steps.determine_pr.outputs.PR_NUMBER }}"
+          python workflows/test_matrix_dashboard/generate_test_matrix_data.py \
+            --pr "${{ steps.determine_pr.outputs.PR_NUMBER }}" \
+            --process_mode "${{ steps.determine_pr.outputs.PROCESS_MODE }}" \
+            --output_dir "${OUTPUT_DIR}" \
+            --old_data_file old_ocp_data.json
           git diff
-          ls -alh dashboard_matrix || true
-          ls -alh dashboard_matrix/ocp_data.json || true
 
-      ###################################################################
-      # 6. COPY THE UPDATED FILE BEFORE SWITCHING BRANCHES
-      ###################################################################
-      - name: Copy updated JSON to a temp location
+      - name: Generate UI
         run: |
-          echo "==== Copying ocp_data.json to /tmp/ ===="
-          cp dashboard_matrix/ocp_data.json /tmp/updated_ocp_data.json
+          echo "Generating UI using output from ${OUTPUT_DIR}"
+          python workflows/test_matrix_dashboard/generate_test_matrix_ui.py --output_dir "${OUTPUT_DIR}"
+          git diff
 
-      ###################################################################
-      # 7. CHECK OUT MAIN AND PULL LATEST
-      ###################################################################
-      - name: Checkout main
+      - name: Commit JSON and HTML to gh-pages
         run: |
-          echo "==== Switching to main branch ===="
-          git fetch origin main
-          git checkout main
-          git pull origin main
-
-      ###################################################################
-      # 8. COPY UPDATED FILE ONTO MAIN & PUSH
-      ###################################################################
-      - name: Overwrite ocp_data.json on main
-        run: |
-          echo "==== Overwriting ocp_data.json on main ===="
-          cp /tmp/updated_ocp_data.json dashboard_matrix/ocp_data.json
-          ls -alh dashboard_matrix || true
-          cat dashboard_matrix/ocp_data.json || true
-
-      - name: Commit changes to main
-        run: |
-          echo "==== Committing changes to main ===="
+          echo "==== Committing JSON and HTML to gh-pages ===="
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
+          # Ensure the OUTPUT_DIR exists and add its contents.
+          mkdir -p "${OUTPUT_DIR}"
+          git add "${OUTPUT_DIR}"
+          git commit -m "Update test matrix data and HTML from PR #${{ steps.determine_pr.outputs.PR_NUMBER }}" || echo "No changes to commit"
+          git push origin HEAD:gh-pages
 
-          git add dashboard_matrix/ocp_data.json
-          git commit -m "Update test matrix data from PR #${{ github.event.pull_request.number }}" || echo "No changes to commit"
-          git push origin main
-
-      ###################################################################
-      # 9. RE-PULL MAIN TO ENSURE LOCAL JSON IS UP TO DATE
-      ###################################################################
-      - name: Pull latest main after push
-        run: |
-          git pull origin main
-          echo "==== Confirming final local ocp_data.json matches main ===="
-          cat dashboard_matrix/ocp_data.json
-
-      ###################################################################
-      # 10. GENERATE HTML (NOW WE HAVE THE UPDATED MAIN)
-      ###################################################################
-      - name: Generate HTML
-        run: |
-          python dashboard_matrix/generate_test_matrix_ui.py
-
-      ###################################################################
-      # 11. DEPLOY
-      ###################################################################
-      - name: Inspect output folder before deploy
-        run: |
-          echo "==== Checking output folder before deploy ===="
-          ls -alh dashboard_matrix/output || true
-
-      - name: Deploy
+      - name: Deploy HTML to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
-          folder: dashboard_matrix/output
+          folder: ${{ env.OUTPUT_DIR }}
           token: ${{ secrets.GITHUB_TOKEN }}
