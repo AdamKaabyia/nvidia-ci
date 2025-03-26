@@ -46,7 +46,8 @@ jobs:
       - name: Checkout the gh-pages branch
         uses: actions/checkout@v4
         with:
-          ref: gh-pages  
+          ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
+          fetch-depth: 2  # Ensure both branches are fetched, including `gh-pages`
 
       - name: Copy ocp_data.json to workspace
         run: |
