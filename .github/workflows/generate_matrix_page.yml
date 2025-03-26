@@ -43,18 +43,18 @@ jobs:
             fi
           fi
 
-      - name: Checkout the gh-pages branch
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages  # Explicitly checking out the gh-pages branch
+      # - name: Checkout the gh-pages branch
+      #   uses: actions/checkout@v4
+      #   with:
+      #     ref: gh-pages  # Explicitly checking out the gh-pages branch
         
-      - name: List files in gh-pages branch (for debugging)
-        run: |
-          ls -R  # List all files recursively to verify the file path
+      # - name: List files in gh-pages branch (for debugging)
+      #   run: |
+      #     ls -R  # List all files recursively to verify the file path
   
-      - name: Copy ocp_data.json to workspace
-        run: |
-          cp ${{ env.OCP_FILE }} ${{ env.OLD_OCP_FILE }}  # Ensure the file exists and is in the correct directory
+      # - name: Copy ocp_data.json to workspace
+      #   run: |
+      #     cp ${{ env.OCP_FILE }} ${{ env.OLD_OCP_FILE }}  # Ensure the file exists and is in the correct directory
   
       - name: Checkout Code (PR or main branch)
         uses: actions/checkout@v4
@@ -73,10 +73,10 @@ jobs:
       #     destination: ${{ env.OLD_OCP_FILE }}   
 
 #we could use this instead of the checkout and copying:
-      # - name: Download ocp_data.json from gh-pages branch using curl
-      #   run: |
-      #     curl -L -o ${{ env.OLD_OCP_FILE }} \
-      #     https://github.com/${{ github.repository }}/raw/gh-pages/${{ env.OCP_FILE }}
+      - name: Download ocp_data.json from gh-pages branch using curl
+        run: |
+          curl -L -o ${{ env.OLD_OCP_FILE }} \
+          https://github.com/${{ github.repository }}/raw/gh-pages/${{ env.OCP_FILE }}
 
 
       - name: Set up Python
