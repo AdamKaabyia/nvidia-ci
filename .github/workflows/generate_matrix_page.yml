@@ -43,41 +43,28 @@ jobs:
             fi
           fi
 
-      # - name: Checkout the gh-pages branch
-      #   uses: actions/checkout@v4
-      #   with:
-      #     ref: gh-pages  # Explicitly checking out the gh-pages branch
-        
-      # - name: List files in gh-pages branch (for debugging)
-      #   run: |
-      #     ls -R  # List all files recursively to verify the file path
-  
-      # - name: Copy ocp_data.json to workspace
-      #   run: |
-      #     cp ${{ env.OCP_FILE }} ${{ env.OLD_OCP_FILE }}  # Ensure the file exists and is in the correct directory
-  
       - name: Checkout Code (PR or main branch)
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
           
+      - name: Checkout baseline (gh-pages branch with old ocp_data.json)
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: baseline  # Checkout into the 'baseline' directory
+          sparse-checkout: |
+            ${{ env.OCP_FILE }}  # Only checkout the ocp_data.json file
 
-
-#this doesnt work will look into it in the future
-      # - name: Get ocp_data.json from gh-pages branch
-      #   uses: dawidd6/action-get-file@v4
-      #   with:
-      #     repository: ${{ github.repository }}
-      #     ref: gh-pages
-      #     path: ${{ env.OCP_FILE }}
-      #     destination: ${{ env.OLD_OCP_FILE }}   
-
-#we could use this instead of the checkout and copying:
-      - name: Download ocp_data.json from gh-pages branch using curl
+      - name: Rename and move ocp_data.json to old_ocp_data.json
         run: |
-          curl -L -o ${{ env.OLD_OCP_FILE }} \
-          https://github.com/${{ github.repository }}/raw/gh-pages/${{ env.OCP_FILE }}
+          echo "Renaming and moving ${GITHUB_WORKSPACE}/baseline/${{ env.OCP_FILE }} to ${GITHUB_WORKSPACE}/${{ env.OLD_OCP_FILE }}"
+          cp ${GITHUB_WORKSPACE}/baseline/${{ env.OCP_FILE }} ${GITHUB_WORKSPACE}/${{ env.OLD_OCP_FILE }}
 
+      - name: List contents of checked-out directories
+        run: |
+          echo "Contents of 'baseline' directory:"
+          ls -1R ${GITHUB_WORKSPACE}/baseline  # List files inside 'baseline' directory
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -93,18 +80,18 @@ jobs:
           echo "Processing PR: ${{ steps.determine_pr.outputs.PR_NUMBER }}"
           python workflows/test_matrix_dashboard/generate_test_matrix_data.py \
             --pr "${{ steps.determine_pr.outputs.PR_NUMBER }}" \
-            --output_dir "${OUTPUT_DIR}" \
+            --output_dir "${{ env.OUTPUT_DIR }}" \
             --old_data_file ${{ env.OLD_OCP_FILE }}
         
       - name: Archive old ocp_data file
         run: |
           echo "Archiving ${{ env.OLD_OCP_FILE }} into output directory..."
-          cp ${{ env.OLD_OCP_FILE }} ${OUTPUT_DIR}/${{ env.OLD_OCP_FILE }}
+          cp ${{ env.OLD_OCP_FILE }} ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}
 
       - name: Generate UI
         run: |
-          echo "Generating UI using output from ${OUTPUT_DIR}"
-          python workflows/test_matrix_dashboard/generate_test_matrix_ui.py --output_dir "${OUTPUT_DIR}"
+          echo "Generating UI using output from ${{ env.OUTPUT_DIR }}"
+          python workflows/test_matrix_dashboard/generate_test_matrix_ui.py --output_dir "${{ env.OUTPUT_DIR }}"
 
       - name: Deploy HTML to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
