@@ -48,16 +48,15 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
           fetch-depth: 2  # Ensure both branches are fetched, including `gh-pages`
-
+      
+      - name: List files in gh-pages branch
+        run: |
+          ls -R  # List all files recursively to verify the file path
+        
       - name: Copy ocp_data.json to workspace
         run: |
           cp ${{env.OCP_FILE}} ${{ env.OLD_OCP_FILE }}  
 
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          # For automatic triggers, use the PR's head ref; for manual, use the provided branch.
-          ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
 
 #this doesnt work will look into it in the future
       # - name: Get ocp_data.json from gh-pages branch
