@@ -50,7 +50,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
 
       - name: Get ocp_data.json from gh-pages branch
-        uses: dawidd6/action-get-file@v1
+        uses: dawidd6/action-get-file@v4
         with:
           repository: ${{ github.repository }}
           ref: gh-pages
