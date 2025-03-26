@@ -95,8 +95,6 @@ jobs:
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
           # Remove untracked files that might conflict with checkout
-          rm -f old_ocp_data.json
-          rm -rf workflows/test_matrix_dashboard/__pycache__
           # Move the generated output to a temporary directory
           mv "${OUTPUT_DIR}" /tmp/output
           # Fetch and check out the latest gh-pages branch
