@@ -50,7 +50,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
 
       - name: Get ocp_data.json from gh-pages branch
-        uses: dawidd6/action-get-file@v2
+        uses: dawidd6/action-get-file@master
         with:
           repository: ${{ github.repository }}
           ref: gh-pages
@@ -79,7 +79,6 @@ jobs:
           echo "Archiving ${{ env.OLD_OCP_FILE }} into output directory..."
           cp ${{ env.OLD_OCP_FILE }} ${OUTPUT_DIR}/${{ env.OLD_OCP_FILE }}
 
-#TODO old_ocp_data + ocp_data have the name in env more flexable
       - name: Generate UI
         run: |
           echo "Generating UI using output from ${OUTPUT_DIR}"
