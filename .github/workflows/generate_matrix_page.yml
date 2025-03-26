@@ -46,16 +46,21 @@ jobs:
       - name: Checkout the gh-pages branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
-          fetch-depth: 2  # Ensure both branches are fetched, including `gh-pages`
-      
-      - name: List files in gh-pages branch
+          ref: gh-pages  # Explicitly checking out the gh-pages branch
+        
+      - name: List files in gh-pages branch (for debugging)
         run: |
           ls -R  # List all files recursively to verify the file path
-        
+  
       - name: Copy ocp_data.json to workspace
         run: |
-          cp ${{env.OCP_FILE}} ${{ env.OLD_OCP_FILE }}  
+          cp ${{ env.OCP_FILE }} ${{ env.OLD_OCP_FILE }}  # Ensure the file exists and is in the correct directory
+  
+      - name: Checkout Code (PR or main branch)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
+          
 
 
 #this doesnt work will look into it in the future
