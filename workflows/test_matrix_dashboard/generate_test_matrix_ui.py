@@ -1,11 +1,11 @@
-import os
-import json
 import argparse
-from datetime import datetime, timezone
-from typing import Any, List, Dict, Tuple
+import json
+import os
+from datetime import datetime
+from typing import Any, Dict, List
+
 from logger import logger
 
-import re
 
 # HTML Header with Updated Styling
 def generate_html_header() -> str:
