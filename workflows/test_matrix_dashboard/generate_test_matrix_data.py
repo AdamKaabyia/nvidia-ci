@@ -135,7 +135,7 @@ def get_all_pr_tests(pr_num: str, ocp_data: Dict[str, List[Dict[str, Any]]]) -> 
         return tests
     except Exception as e:
         raise_error(f"An unexpected error occurred in get_all_pr_tests for PR {pr_num}: {e}")
-        return []
+
 
 def get_job_results(
     pr_id: str, prefix: str, ocp_version: str, gpu_version_suffix: str,
@@ -182,13 +182,9 @@ def get_job_results(
             result["gpu_version"] = gpu_suffix_to_version(gpu_version_suffix)
             update_ocp_data(ocp_data, ocp_version, ocp_version, gpu_suffix_to_version(gpu_version_suffix), status, job_url, timestamp)
         return result
-    except requests.exceptions.RequestException as e:
-        raise_error(f"Request failed in get_job_results: {e}")
-    except KeyError as e:
-        raise_error(f"Missing expected field in job result: {e}")
     except Exception as e:
         raise_error(f"An unexpected error occurred in get_job_results: {e}")
-        return {}
+
 
 def gpu_suffix_to_version(gpu: str) -> str:
     return gpu if gpu == "master" else gpu[:-2].replace("-", ".")
@@ -210,13 +206,8 @@ def get_versions(prefix: str, build_id: str, gpu_version_suffix: str) -> Tuple[s
                            f"gpu-operator-e2e/artifacts/operator.version"
         gpu_version: str = fetch_file_content(gpu_version_file)
         return (ocp_version, gpu_version)
-    except requests.exceptions.RequestException as e:
-        raise_error(f"Request failed in get_versions: {e}")
-    except KeyError as e:
-        raise_error(f"Missing expected field in version fetch: {e}")
     except Exception as e:
         raise_error(f"An unexpected error occurred in get_versions: {e}")
-        return ("", "")
 
 def fetch_file_content(file_path: str) -> str:
     logger.info(f"Fetching file content for {file_path}")
@@ -227,8 +218,6 @@ def fetch_file_content(file_path: str) -> str:
         )
         response.raise_for_status()
         return response.content.decode("UTF-8")
-    except requests.exceptions.RequestException as e:
-        raise_error(f"Request failed in fetch_file_content: {e}")
     except Exception as e:
         raise_error(f"An unexpected error occurred in fetch_file_content: {e}")
         return ""
@@ -246,13 +235,9 @@ def get_status(prefix: str, latest_build_id: str) -> Tuple[str, Any]:
         status: str = data.get("result", "UNKNOWN")
         timestamp = data.get("timestamp", None)
         return status, timestamp
-    except requests.exceptions.RequestException as e:
-        raise_error(f"Request failed in get_status: {e}")
-    except KeyError as e:
-        raise_error(f"Missing expected field in finished.json response: {e}")
     except Exception as e:
         raise_error(f"An unexpected error occurred in get_status: {e}")
-        return ("UNKNOWN", None)
+        
 
 def main() -> None:
     import argparse

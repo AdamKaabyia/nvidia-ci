@@ -52,19 +52,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: gh-pages
-          path: baseline  # Checkout into the 'baseline' directory
+          path: baseline 
           sparse-checkout: |
-            ${{ env.OCP_FILE }}  # Only checkout the ocp_data.json file
+            ${{ env.OCP_FILE }} 
 
-      - name: Rename and move ocp_data.json to old_ocp_data.json
+      - name: Rename and move ${{ env.OCP_FILE }} to ${{ env.OLD_OCP_FILE }}
         run: |
           echo "Renaming and moving ${GITHUB_WORKSPACE}/baseline/${{ env.OCP_FILE }} to ${GITHUB_WORKSPACE}/${{ env.OLD_OCP_FILE }}"
           cp ${GITHUB_WORKSPACE}/baseline/${{ env.OCP_FILE }} ${GITHUB_WORKSPACE}/${{ env.OLD_OCP_FILE }}
-
-      - name: List contents of checked-out directories
-        run: |
-          echo "Contents of 'baseline' directory:"
-          ls -1R ${GITHUB_WORKSPACE}/baseline  # List files inside 'baseline' directory
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -83,7 +78,7 @@ jobs:
             --output_dir "${{ env.OUTPUT_DIR }}" \
             --old_data_file ${{ env.OLD_OCP_FILE }}
         
-      - name: Archive old ocp_data file
+      - name: Archive ${{ env.OLD_OCP_FILE }} 
         run: |
           echo "Archiving ${{ env.OLD_OCP_FILE }} into output directory..."
           cp ${{ env.OLD_OCP_FILE }} ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}
