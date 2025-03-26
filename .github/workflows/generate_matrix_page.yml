@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to check out (default is main)'
+        description: 'Branch to check out'
         default: 'main'
         required: false
         type: string
@@ -16,15 +16,18 @@ on:
         description: 'PR number to process (leave empty to process all history)'
         required: false
         type: string
-
+#TODO
+#1.require to say 'all' not leave empty pr var = [latest|#num|all]
 jobs:
   generate-matrix:
+    if: github.event_name != 'pull_request' || github.repository == 'rh-ecosystem-edge/nvidia-ci' 
     runs-on: ubuntu-latest
     env:
       OUTPUT_DIR: 'workflows/test_matrix_dashboard/output'
       # Set to "latest" to process only the latest PR, or "all" to process all PR history
       PULL_MERGED_MODE: 'latest'
     steps:
+      
       - name: Determine PR Number
         id: determine_pr
         shell: bash
@@ -54,6 +57,8 @@ jobs:
           # For automatic triggers, use the PR's head ref; for manual, use the provided branch.
           ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
 
+      #TODO look into an action that does this - cleaner
+      #TODO if there isnt a ocp_data look into showing the error + force that we have a file even if its empty, because what if the file exists but we couldnt retrieve it
       - name: Extract existing ocp_data.json from gh-pages
         id: extract_json
         shell: bash
@@ -83,34 +88,33 @@ jobs:
             --pr "${{ steps.determine_pr.outputs.PR_NUMBER }}" \
             --output_dir "${OUTPUT_DIR}" \
             --old_data_file old_ocp_data.json
-
+#TODO store old and current ocp_data in gh-pages 
+#TODO old_ocp_data + ocp_data have the name in env more flexable
       - name: Generate UI
         run: |
           echo "Generating UI using output from ${OUTPUT_DIR}"
           python workflows/test_matrix_dashboard/generate_test_matrix_ui.py --output_dir "${OUTPUT_DIR}"
 
-      - name: Commit JSON and HTML to gh-pages
-        run: |
-          echo "==== Committing JSON and HTML to gh-pages ===="
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
-          # Remove untracked files that might conflict with checkout
-          # Move the generated output to a temporary directory
-          mv "${OUTPUT_DIR}" /tmp/output
-          # Fetch and check out the latest gh-pages branch
-          git fetch origin gh-pages
-          git checkout -B gh-pages origin/gh-pages
-          # Copy only the JSON and HTML files from the temporary directory to the root of the branch
-          cp /tmp/output/index.html .
-          cp /tmp/output/ocp_data.json .
-          # Stage and commit changes
-          git add index.html ocp_data.json
-          git commit -m "Update test matrix data and HTML from PR #${{ steps.determine_pr.outputs.PR_NUMBER }}" || echo "No changes to commit"
-          git push origin gh-pages
+      # - name: Commit JSON and HTML to gh-pages
+      #   run: |
+      #     echo "==== Committing JSON and HTML to gh-pages ===="
+      #     git config user.name "${{ github.actor }}"
+      #     git config user.email "${{ github.actor }}@users.noreply.github.com"
+      #     # Move the generated output to a temporary directory
+      #     mv "${OUTPUT_DIR}" /tmp/output
+      #     # Fetch and check out the latest gh-pages branch
+      #     git fetch origin gh-pages
+      #     git checkout -B gh-pages origin/gh-pages
+      #     # Copy only the JSON and HTML files from the temporary directory to the root of the branch
+      #     cp /tmp/output/index.html .
+      #     cp /tmp/output/ocp_data.json .
+      #     # Stage and commit changes
+      #     git add index.html ocp_data.json
+      #     git commit -m "Update test matrix data and HTML from PR #${{ steps.determine_pr.outputs.PR_NUMBER }}" || echo "No changes to commit"
+      #     git push origin gh-pages
 
       - name: Deploy HTML to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
-          folder: '.'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          folder: ${{ env.OUTPUT_DIR }}
