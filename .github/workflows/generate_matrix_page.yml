@@ -43,19 +43,36 @@ jobs:
             fi
           fi
 
+      - name: Checkout the gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages  
+
+      - name: Copy ocp_data.json to workspace
+        run: |
+          cp ${{env.OCP_FILE}} ${{ env.OLD_OCP_FILE }}  
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           # For automatic triggers, use the PR's head ref; for manual, use the provided branch.
           ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
 
-      - name: Get ocp_data.json from gh-pages branch
-        uses: dawidd6/action-get-file@v7
-        with:
-          repository: ${{ github.repository }}
-          ref: gh-pages
-          path: ${{ env.OCP_FILE }}
-          destination: ${{ env.OLD_OCP_FILE }}   
+#this doesnt work will look into it in the future
+      # - name: Get ocp_data.json from gh-pages branch
+      #   uses: dawidd6/action-get-file@v4
+      #   with:
+      #     repository: ${{ github.repository }}
+      #     ref: gh-pages
+      #     path: ${{ env.OCP_FILE }}
+      #     destination: ${{ env.OLD_OCP_FILE }}   
+
+#we could use this instead of the checkout and copying:
+      # - name: Download ocp_data.json from gh-pages branch using curl
+      #   run: |
+      #     curl -L -o ${{ env.OLD_OCP_FILE }} \
+      #     https://github.com/${{ github.repository }}/raw/gh-pages/${{ env.OCP_FILE }}
+
 
       - name: Set up Python
         uses: actions/setup-python@v5
