@@ -53,7 +53,8 @@ jobs:
 
       - name: Rename and move ${{ env.OCP_FILE }} to ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}
         run: |
-          cp /${{ env.OCP_FILE }} ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}
+          mkdir -p "${{ env.OUTPUT_DIR }}"
+          cp ${{ env.OCP_FILE }} ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
