@@ -50,11 +50,24 @@ jobs:
           path: baseline 
           sparse-checkout: |
             ${{ env.OCP_FILE }} 
+            
+      - name: List baseline directory contents
+        run: |
+          echo "Baseline directory contents:"
+          ls -la baseline
 
       - name: Rename and move ${{ env.OCP_FILE }} to ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}
         run: |
           mkdir -p "${{ env.OUTPUT_DIR }}"
-          cp ${{ env.OCP_FILE }} ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}
+          echo "Copying baseline/${{ env.OCP_FILE }} to ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}"
+          cp baseline/${{ env.OCP_FILE }} "${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}"
+          echo "File copied successfully. Listing ${env.OUTPUT_DIR} contents:"
+          ls -la "${{ env.OUTPUT_DIR }}"
+          
+      # - name: Rename and move ${{ env.OCP_FILE }} to ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}
+      #   run: |
+      #     mkdir -p "${{ env.OUTPUT_DIR }}"
+      #     cp ${{ env.OCP_FILE }} ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
