@@ -14,12 +14,12 @@ on:
         type: string
       pr_number:
         description: 'PR number to process (must be specified as a number or "all")'
-        required: false
+        required: true
         type: string
   
 jobs:
   generate-matrix:
-    #if: github.event_name != 'pull_request' || github.repository == 'rh-ecosystem-edge/nvidia-ci' 
+    if: github.event_name != 'pull_request' || github.repository == 'rh-ecosystem-edge/nvidia-ci' 
     runs-on: ubuntu-latest
     env:
       OUTPUT_DIR: 'workflows/test_matrix_dashboard/output'
@@ -47,15 +47,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: gh-pages
+          path: baseline
           sparse-checkout: |
-            ${{ env.OCP_FILE }} 
+            ${{ env.OCP_FILE }}
+
+      - name: List baseline directory contents
+        run: |
+          echo "Baseline directory contents:"
+          ls -la baseline
 
       - name: Rename and move ${{ env.OCP_FILE }} to ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}
         run: |
           mkdir -p "${{ env.OUTPUT_DIR }}"
-          echo "Copying ${{ env.OCP_FILE }} to ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}"
-          cp ${{ env.OCP_FILE }} "${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}"
-          echo "File copied successfully. Listing ${OUTPUT_DIR} contents:"
+          echo "Copying baseline/${{ env.OCP_FILE }} to ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}"
+          cp baseline/${{ env.OCP_FILE }} "${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}"
+          echo "File copied successfully. Listing $OUTPUT_DIR contents:"
           ls -la "${{ env.OUTPUT_DIR }}"
           
       - name: Set up Python
