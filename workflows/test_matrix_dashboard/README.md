@@ -1,3 +1,4 @@
+
 # NVIDIA GPU Operator Matrix – Dashboard
 
 This directory contains the scripts, data, and supporting files used to **generate** and **deploy** a test matrix for the NVIDIA GPU Operator on Red Hat OpenShift.
@@ -24,6 +25,7 @@ This directory contains the scripts, data, and supporting files used to **genera
 
 5. **`requirements.txt`**  
    - Lists Python dependencies required by the above scripts (e.g., `requests`).  
+
    - Install them with:
      ```bash
      pip install -r requirements.txt
@@ -87,11 +89,13 @@ This directory contains the scripts, data, and supporting files used to **genera
 1. **Navigate** to the directory:
    ```bash
    cd workflows/test_matrix_dashboard
+
    ```
 2. **Install** Python dependencies:
    ```bash
    pip install -r requirements.txt
    ```
+
 3. **Update Test Data**:
    ```bash
    python generate_test_matrix_data.py \
@@ -168,3 +172,4 @@ The following GitHub Actions workflow automates the process of updating test dat
 10. **Deploy HTML to GitHub Pages:**  
     - *Purpose:* Publishes the generated HTML and updated data to GitHub Pages.  
     - *Details:* Uses the [JamesIves/github-pages-deploy-action](https://github.com/JamesIves/github-pages-deploy-action) to deploy the contents of the output directory to the `gh-pages` branch.
+
