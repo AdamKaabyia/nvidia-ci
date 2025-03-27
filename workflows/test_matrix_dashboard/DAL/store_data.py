@@ -2,8 +2,9 @@ import json
 import os
 from typing import Any, Dict, List
 
-from data_model import TestResults
-from logger import logger
+from DAL.data_model import TestResults
+from helpers.config import CURRENT_OCP_DATA_FILE
+from helpers.logger import logger
 
 
 def update_ocp_data(
@@ -30,12 +31,12 @@ def save_to_json(
     output_dir: str,
     existing_data: Dict[str, Any] = None,
 ) -> None:
-    """
-    Save the data dictionary to a JSON file (ocp_data.json) in the specified output directory.
+    f"""
+    Save the data dictionary to a JSON file {CURRENT_OCP_DATA_FILE} in the specified output directory.
     If existing_data is provided, merge data into it; otherwise, write data as is.
     This function does NOT load data from disk.
     """
-    file_path = os.path.join(output_dir, "ocp_data.json")
+    file_path = os.path.join(output_dir, CURRENT_OCP_DATA_FILE)
     logger.info(f"[save_to_json] Saving data to {file_path}")
     try:
         if existing_data is None:

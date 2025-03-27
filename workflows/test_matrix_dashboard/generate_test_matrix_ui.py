@@ -1,13 +1,13 @@
 import argparse
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
-from logger import logger
+from helpers.config import CURRENT_OCP_DATA_FILE
+from helpers.logger import logger
 
 
-# HTML Header with Updated Styling
 def generate_html_header() -> str:
     return """
     <!DOCTYPE html>
@@ -222,7 +222,7 @@ def generate_regular_results_table(ocp_version: str, regular_results: List[Dict[
         for bundle in bundle_results:
             status = bundle.get("status", "Unknown")
             status_class = "history-success" if status == "SUCCESS" else "history-failure" if status == "FAILURE" else "history-aborted"
-            bundle_timestamp = datetime.utcfromtimestamp(bundle["timestamp"]).strftime("%Y-%m-%d %H:%M:%S UTC")
+            bundle_timestamp = datetime.fromtimestamp(bundle["timestamp"], timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
             table_html += f"""
             <div class='history-square {status_class}' 
                 onclick='window.open("{bundle["link"]}", "_blank")' 
@@ -230,7 +230,7 @@ def generate_regular_results_table(ocp_version: str, regular_results: List[Dict[
             </div>
             """
         table_html += "</div>"
-        last_bundle_date = datetime.utcfromtimestamp(bundle_results[0]["timestamp"]).strftime("%Y-%m-%d %H:%M:%S UTC")
+        last_bundle_date = datetime.fromtimestamp(bundle_results[0]["timestamp"], timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
         table_html += f"""
         <div><strong>Last Bundle Job Date: </strong>{last_bundle_date}</div>
         """
@@ -258,11 +258,11 @@ def generate_test_matrix(ocp_data: Dict[str, List[Dict[str, Any]]]) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate test matrix HTML UI")
-    parser.add_argument("--output_dir", required=True, help="Output directory where ocp_data.json is stored and HTML will be generated")
+    parser.add_argument("--output_dir", required=True, help="Output directory where JSON is stored and HTML will be generated")
     args = parser.parse_args()
 
     # Construct path to JSON file in the output directory
-    json_path = os.path.join(args.output_dir, "ocp_data.json")
+    json_path = os.path.join(args.output_dir, CURRENT_OCP_DATA_FILE)
     try:
         with open(json_path, "r") as f:
             ocp_data = json.load(f)

@@ -1,11 +1,11 @@
 import urllib.parse
 from typing import Any, Dict, List, Tuple
 
-from config import BASE_URL
-from http_helpers import fetch_file_content, make_request
-from logger import logger
-from store_data import update_ocp_data
-from utils import raise_error
+from DAL.store_data import update_ocp_data
+from helpers.config import BASE_URL
+from helpers.http_helpers import fetch_file_content, make_request
+from helpers.logger import logger
+from helpers.utils import raise_error
 
 
 def get_job_results(

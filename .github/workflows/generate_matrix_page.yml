@@ -43,12 +43,12 @@ jobs:
             fi
           fi
 
-      - name: Checkout Code (PR or main branch)
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref || github.event.inputs.branch }}
           
-      - name: Checkout baseline (gh-pages branch with old ocp_data.json)
+      - name: Checkout baseline
         uses: actions/checkout@v4
         with:
           ref: gh-pages

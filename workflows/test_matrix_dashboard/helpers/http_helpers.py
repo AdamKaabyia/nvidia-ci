@@ -2,10 +2,9 @@ import urllib.parse
 from typing import Any, Dict
 
 import requests
-
-from config import BASE_URL
-from logger import logger
-from utils import raise_error
+from helpers.config import BASE_URL
+from helpers.logger import logger
+from helpers.utils import raise_error
 
 
 def make_request(url: str, params: Dict[str, Any] = None, headers: Dict[str, str] = None) -> Dict[str, Any]:

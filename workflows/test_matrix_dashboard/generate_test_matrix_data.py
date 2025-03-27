@@ -2,12 +2,12 @@ import argparse
 import json
 from typing import Any, Dict, List
 
-from config import BASE_URL, TEST_PATTERN
-from get_test_data import get_job_results
-from http_helpers import make_request
-from logger import logger
-from store_data import save_to_json
-from utils import raise_error
+from DAL.store_data import save_to_json
+from helpers.config import BASE_URL, TEST_PATTERN
+from helpers.get_test_data import get_job_results
+from helpers.http_helpers import make_request
+from helpers.logger import logger
+from helpers.utils import raise_error
 
 
 def retrieve_all_prs(ocp_data: Dict[str, List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
