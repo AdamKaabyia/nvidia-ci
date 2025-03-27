@@ -59,8 +59,8 @@ jobs:
       - name: Rename and move ${{ env.OCP_FILE }} to ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}
         run: |
           mkdir -p "${{ env.OUTPUT_DIR }}"
-          echo "Copying baseline/${{ env.OCP_FILE }} to ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}"
-          cp baseline/${{ env.OCP_FILE }} "${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}"
+          echo "Copying ${{ env.OCP_FILE }} to ${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}"
+          cp ${{ env.OCP_FILE }} "${{ env.OUTPUT_DIR }}/${{ env.OLD_OCP_FILE }}"
           echo "File copied successfully. Listing ${OUTPUT_DIR} contents:"
           ls -la "${{ env.OUTPUT_DIR }}"
           
