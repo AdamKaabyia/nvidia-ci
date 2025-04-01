@@ -157,7 +157,7 @@ def get_all_pr_tests(pr_num: str, ocp_data: Dict[str, List[Dict[str, Any]]]) -> 
         ocp = match.group("ocp_version")
         gpu_suffix = match.group("gpu_version")
         get_job_results(pr_num, job, ocp, gpu_suffix, ocp_data)
-    
+
 def retrieve_all_prs(ocp_data: Dict[str, List[Dict[str, Any]]]) -> None:
     """Retrieve and store test results for all closed PRs against the main branch."""
     logger.info("Retrieving PR history...")
@@ -172,20 +172,38 @@ def retrieve_all_prs(ocp_data: Dict[str, List[Dict[str, Any]]]) -> None:
         pr_num = str(pr["number"])
         logger.info(f"Processing PR #{pr_num}")
         get_all_pr_tests(pr_num, ocp_data)
-   
+
 def save_to_json(new_data: Dict[str, List[Dict[str, Any]]],
                  output_dir: str,
                  new_data_file: str,
                  existing_data: Dict[str, List[Dict[str, Any]]] = None) -> None:
     """
-    Merge new_data into existing_data (if provided) and write to JSON.
-    This ensures old entries remain and new ones are appended.
+    Merge new_data into existing_data and write to JSON.
+
+    For catalog entries (gpu not containing "master" or "bundle"):
+      - If an entry with the same (ocp, gpu) exists, keep only the one with the
+        latest timestamp.
+    For bundle/master entries (gpu contains "master" or "bundle"):
+      - Append new items unless an exact duplicate (all fields match) already exists.
     """
     file_path = os.path.join(output_dir, new_data_file)
     logger.info(f"Saving JSON to {file_path}")
     merged_data = existing_data.copy() if existing_data else {}
-    for key, new_values in new_data.items():
-        merged_data.setdefault(key, []).extend(new_values)
+
+    for ocp_key, new_values in new_data.items():
+        merged_data.setdefault(ocp_key, [])
+        for item in new_values:
+            is_duplicate = any(
+                    old.get("ocp") == item.get("ocp")
+                    and old.get("gpu") == item.get("gpu")
+                    and old.get("status") == item.get("status")
+                    and old.get("link") == item.get("link")
+                    and old.get("timestamp") == item.get("timestamp")
+                    for old in merged_data[ocp_key]
+                )
+            if not is_duplicate:
+                    merged_data[ocp_key].append(item)
+
     with open(file_path, "w") as f:
         json.dump(merged_data, f, indent=4)
     logger.info(f"Data successfully saved to {file_path}")

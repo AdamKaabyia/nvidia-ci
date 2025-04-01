@@ -65,15 +65,19 @@ def build_bundle_info(bundle_results: List[Dict[str, Any]]) -> str:
     """
     Build the small HTML snippet that displays info about GPU bundle statuses.
     (Shown in a 'history-bar' with colored squares.)
+    Newest job is on the LEFT.
     """
     if not bundle_results:
         return ""  # If no bundle results, return empty string
 
-    # De-emphasize GPU bundle info
-    first_timestamp = bundle_results[0]["timestamp"]
-    last_bundle_date = datetime.fromtimestamp(first_timestamp, timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    # 1. Sort all bundle results so that the newest (highest timestamp) is first
+    sorted_bundles = sorted(bundle_results, key=lambda b: b["timestamp"], reverse=True)
 
-    bundle_html = """
+    # 2. Use the first item (now the newest) for "Last Bundle Job Date"
+    newest_timestamp = sorted_bundles[0]["timestamp"]
+    last_bundle_date = datetime.fromtimestamp(newest_timestamp, timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+    bundle_html = f"""
   <div style="margin-top: 20px; font-size: 0.9em; color: #888; background-color: #f7f7f7; padding: 10px; border-radius: 4px;">
     <strong>From main branch (OLM bundle)</strong>
   </div>
@@ -81,9 +85,10 @@ def build_bundle_info(bundle_results: List[Dict[str, Any]]) -> str:
     <div style="margin-top: 5px;">
       <strong>Last Bundle Job Date:</strong> {last_bundle_date}
     </div>
-    """.format(last_bundle_date=last_bundle_date)
+    """
 
-    for bundle in bundle_results:
+    # 3. Iterate from newest (left) to oldest (right)
+    for bundle in sorted_bundles:
         status = bundle.get("status", "Unknown").upper()
         if status == "SUCCESS":
             status_class = "history-success"
@@ -91,6 +96,7 @@ def build_bundle_info(bundle_results: List[Dict[str, Any]]) -> str:
             status_class = "history-failure"
         else:
             status_class = "history-aborted"
+
         bundle_timestamp = datetime.fromtimestamp(bundle["timestamp"], timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
         bundle_html += f"""
@@ -99,8 +105,10 @@ def build_bundle_info(bundle_results: List[Dict[str, Any]]) -> str:
          title='Status: {status} | Timestamp: {bundle_timestamp}'>
     </div>
         """
+
     bundle_html += "</div>"  # end .history-bar
     return bundle_html
+
 
 def generate_test_matrix(ocp_data: Dict[str, List[Dict[str, Any]]]) -> str:
     """
