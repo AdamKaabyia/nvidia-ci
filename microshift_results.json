@@ -41,15 +41,15 @@
       "timestamp": 1767838819,
       "status": "SUCCESS",
       "url": "https://prow.ci.openshift.org/view/gs/test-platform-results/logs/periodic-ci-openshift-microshift-release-4.22-periodics-e2e-aws-ai-model-serving-nightly/2009067875104460800/"
+    },
+    {
+      "num": 2009430270322675712,
+      "timestamp": 1767924978,
+      "status": "SUCCESS",
+      "url": "https://prow.ci.openshift.org/view/gs/test-platform-results/logs/periodic-ci-openshift-microshift-release-4.22-periodics-e2e-aws-ai-model-serving-nightly/2009430270322675712/"
     }
   ],
   "4.21": [
-    {
-      "num": 2001820008799277056,
-      "timestamp": 1766110443,
-      "status": "SUCCESS",
-      "url": "https://prow.ci.openshift.org/view/gs/test-platform-results/logs/periodic-ci-openshift-microshift-release-4.21-periodics-e2e-aws-ai-model-serving-nightly/2001820008799277056/"
-    },
     {
       "num": 2002907222459289600,
       "timestamp": 1766370938,
@@ -133,15 +133,15 @@
       "timestamp": 1767839621,
       "status": "SUCCESS",
       "url": "https://prow.ci.openshift.org/view/gs/test-platform-results/logs/periodic-ci-openshift-microshift-release-4.21-periodics-e2e-aws-ai-model-serving-nightly/2009067866724241408/"
+    },
+    {
+      "num": 2009430263611789312,
+      "timestamp": 1767924989,
+      "status": "SUCCESS",
+      "url": "https://prow.ci.openshift.org/view/gs/test-platform-results/logs/periodic-ci-openshift-microshift-release-4.21-periodics-e2e-aws-ai-model-serving-nightly/2009430263611789312/"
     }
   ],
   "4.20": [
-    {
-      "num": 1990586121167310848,
-      "timestamp": 1763432252,
-      "status": "SUCCESS",
-      "url": "https://prow.ci.openshift.org/view/gs/test-platform-results/logs/periodic-ci-openshift-microshift-release-4.20-periodics-e2e-aws-ai-model-serving-nightly/1990586121167310848/"
-    },
     {
       "num": 1991673240103161856,
       "timestamp": 1763690962,
@@ -225,15 +225,15 @@
       "timestamp": 1767665753,
       "status": "SUCCESS",
       "url": "https://prow.ci.openshift.org/view/gs/test-platform-results/logs/periodic-ci-openshift-microshift-release-4.20-periodics-e2e-aws-ai-model-serving-nightly/2008343085318148096/"
+    },
+    {
+      "num": 2009430257773318144,
+      "timestamp": 1767925020,
+      "status": "SUCCESS",
+      "url": "https://prow.ci.openshift.org/view/gs/test-platform-results/logs/periodic-ci-openshift-microshift-release-4.20-periodics-e2e-aws-ai-model-serving-nightly/2009430257773318144/"
     }
   ],
   "4.19": [
-    {
-      "num": 1990586112787091456,
-      "timestamp": 1763431047,
-      "status": "SUCCESS",
-      "url": "https://prow.ci.openshift.org/view/gs/test-platform-results/logs/periodic-ci-openshift-microshift-release-4.19-periodics-e2e-aws-ai-model-serving-nightly/1990586112787091456/"
-    },
     {
       "num": 1991673232553414656,
       "timestamp": 1763689724,
@@ -317,6 +317,12 @@
       "timestamp": 1767664829,
       "status": "SUCCESS",
       "url": "https://prow.ci.openshift.org/view/gs/test-platform-results/logs/periodic-ci-openshift-microshift-release-4.19-periodics-e2e-aws-ai-model-serving-nightly/2008343078607261696/"
+    },
+    {
+      "num": 2009430249405681664,
+      "timestamp": 1767923885,
+      "status": "SUCCESS",
+      "url": "https://prow.ci.openshift.org/view/gs/test-platform-results/logs/periodic-ci-openshift-microshift-release-4.19-periodics-e2e-aws-ai-model-serving-nightly/2009430249405681664/"
     }
   ],
   "4.18": [
